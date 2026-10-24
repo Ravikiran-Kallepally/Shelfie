@@ -1,0 +1,13 @@
+{
+  "name": "Shelfie",
+  "short_name": "Shelfie",
+  "description": "Track your books and read free classics.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f6f1e7",
+  "theme_color": "#f6f1e7",
+  "icons": [
+    { "src": "/static/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

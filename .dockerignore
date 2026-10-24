@@ -1,0 +1,5 @@
+shelfie*.db*
+cache/
+__pycache__/
+*.pyc
+.git/

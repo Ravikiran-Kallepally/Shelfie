@@ -1,0 +1,23 @@
+# Fly.io deployment. Change `app` to a unique name and `primary_region` to one near you
+# (fly platform regions). SQLite lives on one volume, so keep exactly one machine.
+app = "shelfie-change-me"
+primary_region = "iad"
+
+[build]
+
+[env]
+  SHELFIE_DATA = "/data"
+
+[[mounts]]
+  source = "shelfie_data"
+  destination = "/data"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+[[vm]]
+  memory = "512mb"

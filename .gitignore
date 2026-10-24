@@ -1,0 +1,11 @@
+# your data: accounts, password hashes, reading history. Never commit.
+shelfie*.db
+shelfie*.db-*
+*.db.bak
+# downloaded Project Gutenberg books and catalog cache
+cache/
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
