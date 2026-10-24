@@ -13,7 +13,7 @@ DB_PATH = DATA / "shelfie.db"
 
 STATUSES = ("want", "reading", "read", "dnf")
 VISIBILITY = ("public", "friends", "private")
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 
 def db():
@@ -39,7 +39,8 @@ CREATE TABLE IF NOT EXISTS users (
     is_private INTEGER NOT NULL DEFAULT 0,
     is_admin INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL,
-    goal INTEGER NOT NULL DEFAULT 0
+    goal INTEGER NOT NULL DEFAULT 0,
+    activity_seen TEXT  -- when they last opened Activity; newer items count as unread
 );
 -- one-time links that let someone set a new password without email
 CREATE TABLE IF NOT EXISTS reset_tokens (
@@ -180,8 +181,17 @@ CREATE INDEX IF NOT EXISTS events_user ON events(user_id, id);
 CREATE TABLE IF NOT EXISTS likes (
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     event_id INTEGER NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+    created_at TEXT,
     PRIMARY KEY (user_id, event_id)
 );
+CREATE TABLE IF NOT EXISTS event_comments (
+    id INTEGER PRIMARY KEY,
+    event_id INTEGER NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    text TEXT NOT NULL,
+    created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS event_comments_event ON event_comments(event_id, id);
 """
 
 
@@ -262,11 +272,13 @@ def migrate():
                     conn.backup(dst)
             conn.executescript(SCHEMA.split("CREATE TABLE IF NOT EXISTS books")[0])  # users..follows first
             _to_v1(conn)
-        # v2 only adds columns and tables. Checked against the tables as they are now (a v0
+        # v2 and v3 only add columns and tables. Checked against the tables as they are now (a v0
         # database has just been rebuilt above); ALTER first so SCHEMA's indexes find them.
         now_tables = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
         for table, col, ddl in (("users", "goal", "goal INTEGER NOT NULL DEFAULT 0"),
-                                ("annotations", "pos", "pos REAL")):
+                                ("annotations", "pos", "pos REAL"),
+                                ("users", "activity_seen", "activity_seen TEXT"),
+                                ("likes", "created_at", "created_at TEXT")):
             if table in now_tables and col not in _cols(conn, table):
                 conn.execute(f"ALTER TABLE {table} ADD COLUMN {ddl}")
         conn.commit()

@@ -13,12 +13,16 @@ from datetime import datetime, timedelta
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel, Field
 
 from auth import PUBLIC_USER, current_user, optional_user
 from store import ITEM_SQL, db, now, row_to_item
 
 router = APIRouter()
-MERGE = timedelta(hours=6)  # repeated updates to one book within this window edit one feed item
+MERGE = timedelta(hours=6)
+# things people chose to share. Starting a book or saving it for later still feeds
+# "Reading now" and profiles, but would turn the feed into a log of app activity.
+FEED_KINDS = ("finished", "rated", "reviewed", "highlight", "buddy", "thought")  # repeated updates to one book within this window edit one feed item
 
 
 def follow_status(conn, a: int, b: int) -> Optional[str]:
@@ -278,10 +282,12 @@ def feed(before: int = 0, me: dict = Depends(current_user)):
             " a.text AS quote, a.note AS quote_note, a.color AS quote_color, a.shared AS quote_shared,"
             " (SELECT count(*) FROM likes l WHERE l.event_id=ev.id) AS likes,"
             " EXISTS(SELECT 1 FROM likes l WHERE l.event_id=ev.id AND l.user_id=:me) AS liked,"
-            " (SELECT e2.id FROM entries e2 WHERE e2.book_id=b.id AND e2.user_id=:me) AS my_entry"
+            " (SELECT e2.id FROM entries e2 WHERE e2.book_id=b.id AND e2.user_id=:me) AS my_entry,"
+            " (SELECT count(*) FROM event_comments c WHERE c.event_id=ev.id) AS comments"
             " FROM events ev JOIN users u ON u.id=ev.user_id JOIN entries e ON e.id=ev.entry_id"
             " JOIN books b ON b.id=e.book_id LEFT JOIN annotations a ON a.id=ev.annotation_id"
             " WHERE (ev.user_id=:me OR ev.user_id IN (SELECT followee_id FROM follows WHERE follower_id=:me AND status='accepted'))"
+            f" AND ev.kind IN ({','.join(repr(k) for k in FEED_KINDS)})"
             " AND (:before=0 OR ev.id < :before) ORDER BY ev.id DESC LIMIT 120",
             {"me": me["id"], "before": before}).fetchall()
         vis_cache: dict[int, tuple] = {}
@@ -304,6 +310,8 @@ def feed(before: int = 0, me: dict = Depends(current_user)):
             out.append(d)
             if len(out) == 30:
                 break
+        for d in out:
+            d["recent_comments"] = comment_rows(conn, d["id"], me, limit=2) if d["comments"] else []
         # where the next page starts; 0 = nothing older
         cursor = out[-1]["id"] if len(out) == 30 else rows[-1]["id"] if len(rows) == 120 else 0
         return {"events": out, "before": cursor}
@@ -335,7 +343,7 @@ def _visible_event(conn, me: dict, event_id: int) -> dict:
 def like(event_id: int, me: dict = Depends(current_user)):
     with closing(db()) as conn:
         _visible_event(conn, me, event_id)
-        conn.execute("INSERT OR IGNORE INTO likes VALUES(?,?)", (me["id"], event_id))
+        conn.execute("INSERT OR IGNORE INTO likes(user_id,event_id,created_at) VALUES(?,?,?)", (me["id"], event_id, now()))
         conn.commit()
         return {"likes": conn.execute("SELECT count(*) FROM likes WHERE event_id=?", (event_id,)).fetchone()[0]}
 
@@ -367,3 +375,173 @@ def profile_meta(username: str) -> str:
         tags.append(("og:image", last[0]["cover_url"]))
     meta = "".join(f'<meta property="{k}" content="{html.escape(v)}">' for k, v in tags)
     return meta + f'<meta name="twitter:card" content="summary"><meta name="description" content="{html.escape(desc)}">'
+
+
+# ---------- posting ----------
+class PostIn(BaseModel):
+    entry_id: int
+    text: str = Field(default="", max_length=2000)
+    quote: str = Field(default="", max_length=1000)
+
+
+class FinishIn(BaseModel):
+    rating: Optional[float] = Field(default=None, ge=0, le=5)
+    review: str = Field(default="", max_length=20000)
+    quote: str = Field(default="", max_length=1000)
+
+
+class CommentIn(BaseModel):
+    text: str = Field(min_length=1, max_length=2000)
+
+
+def _my_entry(conn, me: dict, entry_id: int) -> dict:
+    row = conn.execute("SELECT * FROM entries WHERE id=? AND user_id=?", (entry_id, me["id"])).fetchone()
+    if not row:
+        raise HTTPException(404, "That book isn't on your shelves.")
+    return dict(row)
+
+
+@router.post("/api/posts")
+def post_thought(body: PostIn, me: dict = Depends(current_user)):
+    """A thought about a book you're reading, optionally with a line from it."""
+    text, quote = body.text.strip(), body.quote.strip()
+    if not text and not quote:
+        raise HTTPException(400, "Write something to post.")
+    with closing(db()) as conn:
+        _my_entry(conn, me, body.entry_id)
+        record(conn, me["id"], body.entry_id, "thought", {"text": text, "quote": quote})
+        conn.commit()
+    return {"ok": True}
+
+
+@router.post("/api/library/{entry_id}/finish")
+def finish(entry_id: int, body: FinishIn, me: dict = Depends(current_user)):
+    """The "How was it?" step after finishing: rating, a few words and a favourite line join
+    the "finished" post instead of becoming separate ones."""
+    if body.rating is not None and (body.rating * 2) % 1:
+        raise HTTPException(400, "rating must be in half-star steps")
+    with closing(db()) as conn:
+        e = _my_entry(conn, me, entry_id)
+        t = now()
+        conn.execute("UPDATE entries SET status='read', finished_at=coalesce(finished_at, ?), started_at=coalesce(started_at, ?),"
+                     " position=CASE WHEN position>0 THEN 1 ELSE position END,"
+                     " rating=coalesce(?, rating), review=CASE WHEN ?<>'' THEN ? ELSE review END, updated_at=? WHERE id=?",
+                     (t, t, body.rating or None, body.review.strip(), body.review.strip(), t, entry_id))
+        data = {"rating": body.rating or e["rating"]}
+        if body.review.strip():
+            data["reviewed"] = True
+        if body.quote.strip():
+            data["quote"] = body.quote.strip()
+        record(conn, me["id"], entry_id, "finished", data, merge_with=("finished", "rated", "reviewed"))
+        conn.commit()
+    return {"ok": True}
+
+
+@router.delete("/api/events/{event_id}")
+def delete_post(event_id: int, me: dict = Depends(current_user)):
+    with closing(db()) as conn:
+        conn.execute("DELETE FROM events WHERE id=? AND user_id=?", (event_id, me["id"]))
+        conn.commit()
+    return {"ok": True}
+
+
+# ---------- comments ----------
+def comment_rows(conn, event_id: int, me: dict, limit: int = 200) -> list:
+    rows = conn.execute(
+        "SELECT * FROM (SELECT c.id, c.text, c.created_at, c.user_id, u.username, u.display_name FROM event_comments c"
+        " JOIN users u ON u.id=c.user_id WHERE c.event_id=? ORDER BY c.id DESC LIMIT ?) ORDER BY id",
+        (event_id, limit)).fetchall()
+    out = []
+    for r in rows:
+        d = dict(r)
+        d["mine"] = d.pop("user_id") == me["id"]
+        out.append(d)
+    return out
+
+
+@router.get("/api/events/{event_id}/comments")
+def list_comments(event_id: int, me: dict = Depends(current_user)):
+    with closing(db()) as conn:
+        _visible_event(conn, me, event_id)
+        return comment_rows(conn, event_id, me)
+
+
+@router.post("/api/events/{event_id}/comments")
+def add_comment(event_id: int, body: CommentIn, me: dict = Depends(current_user)):
+    with closing(db()) as conn:
+        _visible_event(conn, me, event_id)
+        cid = conn.execute("INSERT INTO event_comments(event_id,user_id,text,created_at) VALUES(?,?,?,?)",
+                           (event_id, me["id"], body.text.strip(), now())).lastrowid
+        conn.commit()
+        return {"id": cid, "text": body.text.strip(), "created_at": now(), "username": me["username"],
+                "display_name": me["display_name"], "mine": True}
+
+
+@router.delete("/api/events/{event_id}/comments/{comment_id}")
+def delete_comment(event_id: int, comment_id: int, me: dict = Depends(current_user)):
+    """Your own comment, or any comment on your own post."""
+    with closing(db()) as conn:
+        conn.execute("DELETE FROM event_comments WHERE id=? AND event_id=? AND (user_id=?"
+                     " OR event_id IN (SELECT id FROM events WHERE user_id=?))", (comment_id, event_id, me["id"], me["id"]))
+        conn.commit()
+    return {"ok": True}
+
+
+# ---------- activity: what used to clutter the feed, now in its own place ----------
+def _activity(conn, me: dict) -> list:
+    rows = conn.execute("""
+        SELECT 'like' AS kind, l.created_at AS created_at, u.username, u.display_name, ev.id AS event_id, b.title, NULL AS text
+          FROM likes l JOIN events ev ON ev.id=l.event_id JOIN users u ON u.id=l.user_id
+          JOIN entries e ON e.id=ev.entry_id JOIN books b ON b.id=e.book_id
+         WHERE ev.user_id=:me AND l.user_id<>:me AND l.created_at IS NOT NULL
+        UNION ALL
+        SELECT 'comment', c.created_at, u.username, u.display_name, ev.id, b.title, c.text
+          FROM event_comments c JOIN events ev ON ev.id=c.event_id JOIN users u ON u.id=c.user_id
+          JOIN entries e ON e.id=ev.entry_id JOIN books b ON b.id=e.book_id
+         WHERE ev.user_id=:me AND c.user_id<>:me
+        UNION ALL
+        SELECT CASE f.status WHEN 'pending' THEN 'request' ELSE 'follow' END, f.created_at, u.username, u.display_name, NULL, NULL, NULL
+          FROM follows f JOIN users u ON u.id=f.follower_id WHERE f.followee_id=:me
+        UNION ALL
+        SELECT 'buddy', m.joined_at, cu.username, cu.display_name, r.id, b.title, NULL
+          FROM read_members m JOIN reads r ON r.id=m.read_id JOIN users cu ON cu.id=r.created_by JOIN books b ON b.id=r.book_id
+         WHERE m.user_id=:me AND r.created_by<>:me AND m.status='invited'
+        UNION ALL
+        SELECT 'joined', i.used_at, u.username, u.display_name, NULL, NULL, NULL
+          FROM invites i JOIN users u ON u.id=i.used_by WHERE i.created_by=:me
+        ORDER BY created_at DESC LIMIT 80""", {"me": me["id"]}).fetchall()
+    joined = {r["username"] for r in rows if r["kind"] == "joined"}
+    # someone who joined through your invite follows you automatically; "joined" says it better
+    return [dict(r) for r in rows if not (r["kind"] == "follow" and r["username"] in joined)]
+
+
+@router.get("/api/activity")
+def activity(me: dict = Depends(current_user)):
+    with closing(db()) as conn:
+        items = _activity(conn, me)
+        seen = me.get("activity_seen") or ""
+        for it in items:
+            it["unread"] = (it["created_at"] or "") > seen
+        conn.execute("UPDATE users SET activity_seen=? WHERE id=?", (now(), me["id"]))
+        conn.commit()
+    return items
+
+
+@router.get("/api/activity/unread")
+def activity_unread(me: dict = Depends(current_user)):
+    with closing(db()) as conn:
+        seen = me.get("activity_seen") or ""
+        return {"unread": sum(1 for it in _activity(conn, me) if (it["created_at"] or "") > seen)}
+
+
+@router.get("/api/people/suggested")
+def suggested(me: dict = Depends(current_user)):
+    """Friends of friends you don't follow yet, for a quiet feed."""
+    with closing(db()) as conn:
+        rows = conn.execute(
+            "SELECT u.*, count(*) AS mutual FROM follows mine JOIN follows theirs ON theirs.follower_id=mine.followee_id"
+            " AND theirs.status='accepted' JOIN users u ON u.id=theirs.followee_id"
+            " WHERE mine.follower_id=? AND mine.status='accepted' AND u.id<>?"
+            " AND u.id NOT IN (SELECT followee_id FROM follows WHERE follower_id=?)"
+            " GROUP BY u.id ORDER BY mutual DESC LIMIT 8", (me["id"], me["id"], me["id"])).fetchall()
+        return [public_user(dict(r)) | {"mutual": r["mutual"]} for r in rows]

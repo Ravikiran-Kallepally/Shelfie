@@ -398,7 +398,8 @@ body.anon{padding-bottom:24px}
 .evh time{display:block;color:var(--muted);font-size:12px;margin-top:1px}
 .evh .av{width:38px;height:38px;font-size:14px}
 .eva{display:flex;align-items:center;gap:8px;margin:10px -4px 0}
-.pill{border-radius:99px;padding:7px 14px;font-size:13px;font-weight:600}
+.pill{border-radius:99px;padding:7px 12px;font-size:13px;font-weight:600;white-space:nowrap}
+.eva .heart,.eva .cbtn{padding:6px}
 .pill.solid{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .mine{font-size:13px;color:var(--ok);font-weight:600;padding:0 6px}
 .heart{border:none;background:none;padding:6px 8px;color:var(--muted);font-size:14px;display:flex;align-items:center;gap:6px}
@@ -449,6 +450,51 @@ body.anon{padding-bottom:24px}
 .bkrow .cover{width:46px;flex:none;font-size:0;padding:0}
 .bkrow .t{font:600 15px/1.3 var(--serif)}
 .bkrow .a{color:var(--muted);font-size:13px}
+/* thought posts */
+.thought{margin:12px 2px 2px;font:18px/1.55 var(--serif);white-space:pre-wrap;word-wrap:break-word}
+.minq{margin:12px 0 0;padding:14px 16px;border-radius:14px;background:color-mix(in srgb,var(--accent) 9%,var(--card));font:16px/1.55 var(--serif);font-style:italic}
+.evmore{margin-left:auto;border:none;background:none;color:var(--muted);padding:4px 8px;font-size:18px;line-height:1}
+.cbtn{border:none;background:none;color:var(--muted);padding:6px 8px;display:flex;align-items:center;gap:6px;font-size:14px}
+.cbtn svg{width:21px;height:21px}
+.cprev{margin:6px 2px 4px;font-size:14px;line-height:1.45}
+.cprev div{margin-top:3px}
+.cprev b{font-weight:650;cursor:pointer}
+.cprev a{color:var(--muted);cursor:pointer;font-size:13px}
+/* composer */
+.composer{display:flex;align-items:center;gap:12px;padding:12px 14px;margin:6px 0 4px;border-radius:22px;background:var(--card);border:1px solid var(--line);cursor:pointer;color:var(--muted);font-size:15px}
+.composer:active{transform:scale(.99)}
+.composer .av{width:38px;height:38px}
+.cpbook{display:flex;gap:8px;overflow-x:auto;margin:0 -20px 12px;padding:2px 20px 6px;scrollbar-width:none}
+.cpbook::-webkit-scrollbar{display:none}
+.cpbook button{flex:0 0 72px;padding:0;border:none;background:none;text-align:left}
+.cpbook .cover{font-size:8px;transition:outline-color .15s}
+.cpbook button.on .cover{outline:3px solid var(--accent);outline-offset:2px}
+.cpbook small{display:block;font-size:11px;line-height:1.25;margin-top:5px;color:var(--muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.finhead{text-align:center;margin:4px 0 6px}
+.finhead .cover{width:110px;margin:0 auto 14px;font-size:11px;box-shadow:0 12px 30px rgba(0,0,0,.25);transform:rotate(-2deg)}
+.finhead h2{margin:0}
+.finhead .starpick{font-size:40px;margin-top:12px}
+/* activity (notifications) */
+.bell{position:relative}
+.bell .dotn{position:absolute;top:6px;right:6px;min-width:18px;height:18px;border-radius:9px;padding:0 5px;background:#e0457b;color:#fff;font:700 11px/18px system-ui,sans-serif;text-align:center;box-shadow:0 0 0 2px var(--bg)}
+.act{display:flex;gap:12px;align-items:flex-start;padding:10px 4px;border-radius:12px;cursor:pointer;font-size:14px;line-height:1.4}
+.act:active{background:var(--card)}
+.act.unread{background:color-mix(in srgb,var(--accent) 8%,transparent)}
+.act .txt{flex:1;min-width:0}
+.act .txt i{font-style:normal;font-family:var(--serif);font-weight:600}
+.act .txt q{display:block;color:var(--muted);quotes:"“" "”";margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.act time{color:var(--muted);font-size:12px;white-space:nowrap}
+/* quiet feed */
+.quiet{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:16px;margin-bottom:14px}
+.quiet h3{margin:0 0 4px;font:600 17px/1.3 var(--serif)}
+/* desktop: a centred reading column with a side panel */
+@media (min-width:1000px){
+  #friendsView{display:grid;grid-template-columns:minmax(0,600px) 300px;gap:32px;justify-content:center;align-items:start}
+  #friendsView>.fmain{grid-column:1}
+  #friendsView>.fside{grid-column:2;position:sticky;top:84px}
+  #friendsView .stories{margin:0;flex-wrap:wrap;overflow:visible}
+}
+@media (max-width:999px){.fside .rnlabel{display:none}}
 /* reading now: story circles with a progress ring */
 .stories{display:flex;gap:14px;overflow-x:auto;margin:4px -16px 6px;padding:6px 16px 10px;scrollbar-width:none}
 .stories::-webkit-scrollbar{display:none}
@@ -495,6 +541,7 @@ body.anon{padding-bottom:24px}
   </nav>
   <div class="grow"></div>
   <span class="offline" id="offline" hidden>Offline</span>
+  <button class="iconbtn bell" data-act="activity" aria-label="Activity"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 8 3 8H3s3-1 3-8"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg><span class="dotn" id="bellN" hidden></span></button>
   <button class="primary sm wideonly" data-act="add">+ Add book</button>
   <button class="iconbtn narrowonly" data-act="add" aria-label="Add a book"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
   <button class="iconbtn" data-act="menu" aria-label="More"><svg class="i" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>
@@ -529,13 +576,18 @@ body.anon{padding-bottom:24px}
   </section>
 
   <section id="friendsView" class="view" hidden>
-    <div class="row" style="margin-top:12px"><div class="h2 f1" style="margin:8px 0">Friends</div>
-      <button class="sm" data-act="people">Find people</button><button class="primary sm" data-act="invite">Invite</button></div>
-    <div id="buddyWrap"></div>
-    <div id="reqs"></div>
-    <div id="frWrap" hidden><div class="stories" id="frRail"></div></div>
-    <div id="feed"></div>
-    <div id="feedMore"></div>
+    <div class="fside">
+      <div class="row" style="margin-top:12px"><div class="h2 f1" style="margin:8px 0">Friends</div>
+        <button class="sm" data-act="people">Find people</button><button class="primary sm" data-act="invite">Invite</button></div>
+      <div id="frWrap" hidden><div class="h2 rnlabel" style="font-size:15px;margin:10px 0 4px">Reading now</div><div class="stories" id="frRail"></div></div>
+      <div id="reqs"></div>
+      <div id="buddyWrap"></div>
+    </div>
+    <div class="fmain">
+      <div class="composer" data-act="compose" id="composer"></div>
+      <div id="feed"></div>
+      <div id="feedMore"></div>
+    </div>
   </section>
 
   <section id="profileView" class="view" hidden></section>
@@ -580,6 +632,21 @@ body.anon{padding-bottom:24px}
 <dialog class="sheet" id="peopleDlg"><div class="grab"></div><div class="body"><h2 id="peopleTitle"></h2>
   <form id="peopleForm" hidden style="margin-bottom:8px"><div class="search" style="margin:0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="peopleQ" type="search" placeholder="Name or @username" autocomplete="off"></div></form>
   <div id="peopleList"></div></div></dialog>
+<!-- activity: likes, comments, follows, invites -->
+<dialog class="sheet" id="actDlg"><div class="grab"></div><div class="body"><h2>Activity</h2><div id="actList"></div></div></dialog>
+<!-- comments on a post -->
+<dialog class="sheet" id="cmtDlg"><div class="grab"></div><div class="body"><h2>Comments</h2><div id="cmtList"></div>
+  <form id="pcForm" class="row" style="margin-top:12px"><input type="text" class="f1" id="pcText" maxlength="2000" placeholder="Add a comment…" autocomplete="off"><button class="primary sm">Post</button></form></div></dialog>
+<!-- share a thought -->
+<dialog class="sheet" id="composeDlg"><div class="grab"></div><div class="body">
+  <h2>Share a thought</h2>
+  <div class="cpbook" id="cpBooks"></div>
+  <textarea id="cpText" maxlength="2000" placeholder="What's on your mind about this book?" style="min-height:110px"></textarea>
+  <input type="text" id="cpQuote" maxlength="1000" placeholder="A line you loved (optional)" style="margin-top:10px">
+  <div class="row" style="margin-top:14px"><span class="muted f1" id="cpWho" style="font-size:13px"></span><button class="primary" id="cpGo" disabled>Post</button></div>
+</div></dialog>
+<!-- after finishing: how was it? -->
+<dialog class="sheet" id="finDlg"><div class="grab"></div><div class="body" id="finBody"></div></dialog>
 <!-- reading stats -->
 <dialog class="sheet" id="statsDlg"><div class="grab"></div><div class="body" id="statsBody"></div></dialog>
 <!-- pick friends for a buddy read -->
@@ -906,6 +973,8 @@ let qt;$("#q").addEventListener("input",e=>{clearTimeout(qt);qt=setTimeout(()=>{
 
 async function action(a){
   if(a==="stats"){openStats();return}
+  if(a==="compose"){openCompose();return}
+  if(a==="activity"){openActivity();return}
   if(a==="exporthl"){location.href="/api/export/highlights.md";$("#menuDlg").close();return}
   if(a==="people"){openPeople("search");return}
   if(a==="invite"){shareInvite();return}
@@ -1036,7 +1105,8 @@ function openBook(id){
     }
   };
   $("#starslot").appendChild(starPicker(it.rating||0,v=>save({rating:v||null})));
-  $("#seg").onclick=e=>{const st=e.target.dataset.st;if(st)save({status:st})};
+  $("#seg").onclick=async e=>{const st=e.target.dataset.st;if(!st)return;const was=it.status;await save({status:st});
+    if(st==="read"&&was!=="read"&&it.status==="read"){bookDlg.close();openFinish(it)}}; // ask how it was
   const p=$("#prog");if(p){p.oninput=()=>$("#pl").textContent=p.value;p.onchange=()=>save({progress:+p.value})}
   const pn=$("#progn");if(pn)pn.onchange=()=>save({progress:+pn.value||0});
   $("#rev").onchange=e=>save({review:e.target.value});
@@ -1640,7 +1710,7 @@ rText.addEventListener("click",async e=>{
   const patch={status:"read",position:1};
   try{Object.assign(it,await api("/library/"+it.entry_id,{method:"PATCH",body:patch}))}
   catch(err){if(!err.offline){b.disabled=false;toast("Couldn't save that");return}Object.assign(it,patch);send("PATCH","/library/"+it.entry_id,patch)}
-  b.textContent="Marked as read ✓";toast("Finished! Added to Read");
+  b.textContent="Marked as read ✓";openFinish(it);
 });
 document.addEventListener("keydown",e=>{
   if(reader.hidden||!R.ready||e.target.matches("input,textarea,select")||$("#rTocDlg").open||$("#rSetDlg").open||annDlg.open)return;
@@ -1869,7 +1939,7 @@ function ago(iso){
   return new Date(iso+"Z").toLocaleDateString(undefined,{month:"short",day:"numeric"});
 }
 const HEART=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>`;
-function renderMe(){$("#meTab").innerHTML=avatar(S.me)+"You";$("#meTop").innerHTML=avatar(S.me)}
+function renderMe(){$("#meTab").innerHTML=avatar(S.me)+"You";$("#meTop").innerHTML=avatar(S.me);renderComposer();refreshBell()}
 
 /* sign in / join */
 async function showAuth(mode){
@@ -1957,9 +2027,18 @@ async function moreFeed(reset){
   F.busy=false;
   const from=F.events.length;F.events.push(...r.events);F.before=r.before;
   const html=feedHTML(r.events,from);
-  if(reset)$("#feed").innerHTML=html||`<div class="empty"><b>Your feed is waiting for friends</b>When people you follow start, finish or highlight a book, it shows up here.<br><button class="primary" data-act="invite">Invite a friend</button></div>`;
+  if(reset){$("#feed").innerHTML=html;if(r.events.length<5&&!F.before)quietFeed()}
   else $("#feed").insertAdjacentHTML("beforeend",html);
   if(F.before)feedObs.observe($("#feedMore"));
+}
+async function quietFeed(){
+  const sug=await api("/people/suggested").catch(()=>[]);
+  $("#feed").insertAdjacentHTML(F.events.length?"beforeend":"afterbegin",`<div class="quiet">
+    <h3>${F.events.length?"That's everything for now":"Your feed fills up with friends"}</h3>
+    <div class="muted" style="font-size:14px">When friends finish a book, share a thought or a favourite line, it shows up here.</div>
+    ${sug.length?`<div class="field" style="margin-bottom:0"><label>People your friends follow</label>${sug.map(u=>`<div class="prow" data-user="${u.username}">${avatar(u)}<div class="who"><b>${esc(u.display_name)}</b><small>${u.mutual} mutual</small></div>
+      <button class="sm primary" data-pfollow2="${u.username}">Follow</button></div>`).join("")}</div>`:""}
+    <button class="primary" data-act="invite" style="margin-top:14px;width:100%">Invite a friend</button></div>`);
 }
 const feedObs=new IntersectionObserver(es=>{if(es[0].isIntersecting&&S.view==="friends"){feedObs.unobserve($("#feedMore"));moreFeed(false)}},{rootMargin:"600px"});
 function dayLabel(iso){
@@ -1968,29 +2047,27 @@ function dayLabel(iso){
   if(t-d<6*864e5)return d.toLocaleDateString(undefined,{weekday:"long"});
   return d.toLocaleDateString(undefined,{month:"long",day:"numeric",year:d.getFullYear()===t.getFullYear()?undefined:"numeric"});
 }
-// one person's run of want-to-read saves on the same day becomes a single little shelf
 function feedHTML(events,from){
-  const items=[];
-  events.forEach((e,j)=>{
-    const last=items.at(-1);
-    if(e.kind==="want"&&last?.want&&last.user===e.username&&dayLabel(F.events[last.idx[0]].created_at)===dayLabel(e.created_at)){last.idx.push(from+j);return}
-    items.push({want:e.kind==="want",user:e.username,idx:[from+j]});
-  });
   let h="";
-  items.forEach((it,n)=>{
-    const e=F.events[it.idx[0]],day=dayLabel(e.created_at);
+  events.forEach((e,j)=>{
+    const day=dayLabel(e.created_at);
     if(day!==F.day){F.day=day;h+=`<div class="dayhdr">${day}</div>`}
-    h+=(it.want?wantHTML(it.idx):evHTML(e,it.idx[0])).replace("<article ",`<article style="--d:${Math.min(n,6)*45}ms" `);
+    h+=evHTML(e,from+j).replace("<article ",`<article style="--d:${Math.min(j,6)*45}ms" data-ev="${from+j}" `);
   });
   return h;
 }
 const who=e=>`<b data-user="${e.username}">${e.mine?"You":esc(e.display_name)}</b>`;
 function evHead(e,verb){
   return `<header class="evh"><span data-user="${e.username}" style="cursor:pointer">${avatar(e)}</span>
-    <div class="who">${who(e)} <span class="vb">${verb}</span><time>${ago(e.created_at)}</time></div></header>`;
+    <div class="who">${who(e)} <span class="vb">${verb}</span><time>${ago(e.created_at)}</time></div>
+    ${e.mine?`<button class="evmore" data-evdel aria-label="Delete post">⋯</button>`:""}</header>`;
 }
+const BUBBLE=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/></svg>`;
 function evActions(e,i){
-  return `<footer class="eva"><button class="heart ${e.liked?"on":""}" data-like="${i}" aria-label="${e.liked?"Unlike":"Like"}">${HEART}<span>${e.likes||""}</span></button>
+  return `${(e.recent_comments||[]).length?`<div class="cprev">${e.recent_comments.map(c=>`<div><b data-user="${c.username}">${c.mine?"You":esc(c.display_name)}</b> ${esc(c.text)}</div>`).join("")}
+      ${e.comments>e.recent_comments.length?`<a data-cmts>View all ${e.comments} comments</a>`:""}</div>`:""}
+    <footer class="eva"><button class="heart ${e.liked?"on":""}" data-like="${i}" aria-label="${e.liked?"Unlike":"Like"}">${HEART}<span>${e.likes||""}</span></button>
+    <button class="cbtn" data-cmts aria-label="Comment">${BUBBLE}<span>${e.comments||""}</span></button>
     <div style="flex:1"></div>
     ${e.mine?"":e.my_entry?`<span class="mine">✓ On your shelf</span>`:`<button class="pill" data-fwant="${i}">+ Want to read</button>`}
     ${e.gutenberg_id&&!e.mine&&!e.my_entry?`<button class="pill solid" data-evread="${i}">Read free</button>`:""}</footer>`;
@@ -2005,6 +2082,12 @@ function evHTML(e,i){
         <div class="t">${esc(e.title)}</div><div class="a">${esc(e.author)}</div>
         ${rating?`<div class="bigstars" aria-label="${rating} out of 5 stars">${stars(rating)}</div>`:""}</div></div>
     ${e.review?`<p class="rev">${esc(e.review)}</p>`:""}
+    ${e.data.quote?`<p class="minq">“${esc(e.data.quote)}”</p>`:""}
+    ${evActions(e,i)}</article>`;
+  if(e.kind==="thought")return `<article class="ev">${evHead(e,`on <i style="font-style:normal;font-family:var(--serif);font-weight:600;color:var(--ink)">${esc(e.title)}</i>`)}
+    ${e.data.text?`<p class="thought">${esc(e.data.text)}</p>`:""}
+    ${e.data.quote?`<p class="minq">“${esc(e.data.quote)}”</p>`:""}
+    <div class="bkrow" data-fb="${i}">${coverHTML(e)}<div style="min-width:0"><div class="t">${esc(e.title)}</div><div class="a">${esc(e.author)}</div></div></div>
     ${evActions(e,i)}</article>`;
   if(e.kind==="reviewed")return `<article class="ev">${evHead(e,"wrote a review")}
     <div class="pullq"><p>${esc(e.review||"")}</p></div>
@@ -2024,14 +2107,13 @@ function evHTML(e,i){
     <div class="txt">${who(e)} <span class="muted">started</span> <i>${esc(e.title)}</i><time>${ago(e.created_at)}</time></div>
     <button class="heart ${e.liked?"on":""}" data-like="${i}" aria-label="Like">${HEART}<span>${e.likes||""}</span></button></div></article>`;
 }
-function wantHTML(idx){
-  const e=F.events[idx[0]],n=idx.length;
-  return `<article class="ev">${evHead(e,n>1?`wants to read ${n} books`:"wants to read")}
-    ${n>1?`<div class="minishelf">${idx.map(i=>{const b=F.events[i];return `<div class="book" data-fb="${i}">${coverHTML(b)}<div class="t">${esc(b.title)}</div></div>`}).join("")}</div>`
-      :`<div class="bkrow" data-fb="${idx[0]}">${coverHTML(e)}<div style="min-width:0"><div class="t">${esc(e.title)}</div><div class="a">${esc(e.author)}</div></div></div>${evActions(e,idx[0])}`}
-  </article>`;
-}
 $("#friendsView").addEventListener("click",async e=>{
+  const art=e.target.closest("[data-ev]"),ev=art&&F.events[+art.dataset.ev];
+  if(e.target.closest("[data-cmts]")&&ev){openComments(ev,art);return}
+  if(e.target.closest("[data-evdel]")&&ev){if(!confirm("Delete this post?"))return;
+    await api(`/events/${ev.id}`,{method:"DELETE"}).catch(()=>{});art.remove();return}
+  const sf=e.target.closest("[data-pfollow2]");
+  if(sf){const st=await toggleFollow(sf.dataset.pfollow2,null);if(st!==undefined){sf.textContent=st==="pending"?"Requested":"Following";sf.disabled=true;sf.className="sm"}return}
   const rq=e.target.closest("[data-req]");
   if(rq){await api("/me/requests/"+rq.dataset.u,{method:rq.dataset.req==="ok"?"POST":"DELETE"}).catch(()=>{});loadFriends();return}
   const lk=e.target.closest("[data-like]");
@@ -2051,6 +2133,95 @@ $("#friendsView").addEventListener("click",async e=>{
   const fb=e.target.closest("[data-fb]");if(fb){const ev=F.events[+fb.dataset.fb];openFriendBook(ev,ev.mine?null:ev.display_name);return}
   const fr=e.target.closest("[data-fr]");if(fr){const b=F.reading[+fr.dataset.fr];openFriendBook(b,b.display_name)}
 });
+
+/* share a thought */
+let cpEntry=null;
+function renderComposer(){$("#composer").innerHTML=`${avatar(S.me)}<span>Share a thought about what you're reading…</span>`}
+async function openCompose(entryId){
+  if(!S.reading.length&&!S.items.length)await load();
+  const books=[...new Map([...S.reading,...S.items.filter(b=>b.status==="read")].map(b=>[b.entry_id,b])).values()].slice(0,20);
+  if(!books.length){toast("Add a book to your shelves first");return}
+  cpEntry=entryId||books[0].entry_id;
+  $("#cpBooks").innerHTML=books.map(b=>`<button data-cp="${b.entry_id}" class="${b.entry_id===cpEntry?"on":""}">${coverHTML(b)}<small>${esc(b.title)}</small></button>`).join("");
+  $("#cpText").value=$("#cpQuote").value="";$("#cpGo").disabled=true;cpVis();
+  sheet($("#composeDlg"));setTimeout(()=>$("#cpText").focus(),300);
+}
+function cpVis(){
+  const b=findItem(cpEntry);
+  $("#cpWho").textContent=b?{public:"Everyone can see this",friends:"Your friends can see this",private:"This book is private: only you will see this"}[b.visibility]:"";
+}
+$("#cpBooks").onclick=e=>{const b=e.target.closest("[data-cp]");if(!b)return;cpEntry=+b.dataset.cp;$$("#cpBooks button").forEach(x=>x.classList.toggle("on",x===b));cpVis()};
+["#cpText","#cpQuote"].forEach(x=>$(x).addEventListener("input",()=>{$("#cpGo").disabled=!$("#cpText").value.trim()&&!$("#cpQuote").value.trim()}));
+$("#cpGo").onclick=async()=>{
+  $("#cpGo").disabled=true;
+  try{await api("/posts",{method:"POST",body:{entry_id:cpEntry,text:$("#cpText").value,quote:$("#cpQuote").value}});
+    $("#composeDlg").close();toast("Posted");if(S.view==="friends")loadFriends();else nav("/friends")}
+  catch(err){$("#cpGo").disabled=false;toast(errMsg(err))}
+};
+
+/* comments */
+let cmtEv=null,cmtArt=null;
+async function openComments(ev,art){
+  cmtEv=ev;cmtArt=art;$("#pcText").value="";
+  $("#cmtList").innerHTML=`<div class="muted">Loading…</div>`;sheet($("#cmtDlg"));
+  renderComments(await api(`/events/${ev.id}/comments`).catch(()=>[]));
+  setTimeout(()=>$("#pcText").focus(),300);
+}
+function renderComments(list){
+  $("#cmtList").innerHTML=list.map(c=>`<div class="cmt"><div class="who">${avatar(c,"sm")}<b data-user="${c.username}" style="cursor:pointer">${c.mine?"You":esc(c.display_name)}</b><time>${ago(c.created_at)}</time>
+    ${c.mine||cmtEv.mine?`<button class="del" data-pcdel="${c.id}">Delete</button>`:""}</div><p>${esc(c.text)}</p></div>`).join("")||
+    `<div class="muted" style="padding:8px 0;font-size:14px">No comments yet. Start the conversation.</div>`;
+  cmtEv.comments=list.length;cmtEv.recent_comments=list.slice(-2);
+  if(cmtArt?.isConnected){const n=+cmtArt.dataset.ev;cmtArt.outerHTML=evHTML(cmtEv,n).replace("<article ",`<article data-ev="${n}" style="animation:none" `);cmtArt=$(`#feed [data-ev="${n}"]`)}
+}
+$("#pcForm").onsubmit=async e=>{
+  e.preventDefault();const t=$("#pcText").value.trim();if(!t)return;
+  try{await api(`/events/${cmtEv.id}/comments`,{method:"POST",body:{text:t}});$("#pcText").value="";renderComments(await api(`/events/${cmtEv.id}/comments`))}
+  catch(err){toast(errMsg(err))}
+};
+$("#cmtList").addEventListener("click",async e=>{const d=e.target.closest("[data-pcdel]");if(!d)return;
+  await api(`/events/${cmtEv.id}/comments/${d.dataset.pcdel}`,{method:"DELETE"}).catch(()=>{});renderComments(await api(`/events/${cmtEv.id}/comments`).catch(()=>[]))});
+
+/* finished a book: how was it? (turns "You finished a book" into a real post) */
+function openFinish(it){
+  let rating=it.rating||0;
+  $("#finBody").innerHTML=`<div class="finhead">${coverHTML(it)}<h2>You finished ${esc(it.title)}!</h2><div class="muted">How was it?</div><div id="finStars"></div></div>
+    <div class="field"><label>A few words for your friends</label><textarea id="finRev" maxlength="20000" placeholder="What stayed with you?">${esc(it.review||"")}</textarea></div>
+    <div class="field"><label>A line you loved (optional)</label><input type="text" id="finQuote" maxlength="1000"></div>
+    <div class="row"><button class="ghost" id="finSkip">Not now</button><div class="f1"></div><button class="primary" id="finGo">Share</button></div>`;
+  $("#finStars").appendChild(starPicker(rating,v=>rating=v));
+  $("#finSkip").onclick=()=>$("#finDlg").close();
+  $("#finGo").onclick=async()=>{
+    $("#finGo").disabled=true;
+    try{await api(`/library/${it.entry_id}/finish`,{method:"POST",body:{rating:rating||null,review:$("#finRev").value,quote:$("#finQuote").value}});
+      Object.assign(it,{status:"read",rating:rating||it.rating,review:$("#finRev").value||it.review});
+      $("#finDlg").close();toast("Shared with your friends");load()}
+    catch(err){$("#finGo").disabled=false;toast(errMsg(err))}
+  };
+  sheet($("#finDlg"));
+}
+
+/* activity: likes, comments, follows, invites — kept out of the feed */
+const ACT={like:"liked your post about",comment:"commented on your post about",follow:"started following you",request:"wants to follow you",
+  buddy:"invited you to read",joined:"joined Shelfie with your invite"};
+async function refreshBell(){
+  if(!S.me)return;
+  const r=await api("/activity/unread").catch(()=>null);if(!r)return;
+  $("#bellN").hidden=!r.unread;$("#bellN").textContent=r.unread>9?"9+":r.unread;
+}
+setInterval(()=>{if(document.visibilityState==="visible")refreshBell()},60000);
+async function openActivity(){
+  $("#actList").innerHTML=`<div class="muted">Loading…</div>`;sheet($("#actDlg"));
+  const list=await api("/activity").catch(()=>[]);
+  $("#bellN").hidden=true;
+  $("#actList").innerHTML=list.map(a=>`<div class="act ${a.unread?"unread":""}" data-user="${a.username}" ${a.kind==="buddy"||a.kind==="request"?'data-actfr':""}>${avatar(a)}
+    <div class="txt"><b>${esc(a.display_name)}</b> ${ACT[a.kind]||a.kind}${a.title?` <i>${esc(a.title)}</i>`:""}${a.text?`<q>${esc(a.text)}</q>`:""}</div>
+    <time>${ago(a.created_at)}</time></div>`).join("")||`<div class="muted" style="padding:10px 4px;font-size:14px">Nothing yet. When friends like or comment on your posts, or follow you, it shows up here.</div>`;
+}
+$("#actList").addEventListener("click",e=>{
+  // invitations and follow requests are answered on the Friends tab
+  if(e.target.closest("[data-actfr]")){e.stopPropagation();$("#actDlg").close();nav("/friends")}
+},true);
 
 /* a book on someone's shelf */
 function openFriendBook(b,owner){
