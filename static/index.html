@@ -841,8 +841,10 @@ const esc=s=>(s??"").toString().replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">
 function stars(r){if(!r)return"";let s="";for(let i=1;i<=5;i++)s+=r>=i?"★":`<span class="${r>=i-.5?"half":"off"}">★</span>`;return s}
 const pctOf=b=>b.gutenberg_id?Math.round((b.position||0)*100):b.pages?Math.min(100,Math.round(b.progress/b.pages*100)):0;
 const PLUS=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>`;
+// covers come through Shelfie's own server (see /api/cover in app.py)
+const coverSrc=u=>/^https:\/\/(www\.)?(gutenberg\.org|covers\.openlibrary\.org)\//.test(u||"")?"/api/cover?u="+encodeURIComponent(u):u;
 function coverHTML(b,extra=""){
-  return `<div class="cover">${b.cover_url?`<img loading="lazy" decoding="async" src="${esc(b.cover_url)}" alt="" onload="this.classList.add('ok')" onerror="this.remove()">`:""}<span class="ct">${esc(b.title)}</span>${extra}</div>`;
+  return `<div class="cover">${b.cover_url?`<img loading="lazy" decoding="async" src="${esc(coverSrc(b.cover_url))}" alt="" onload="this.classList.add('ok')" onerror="this.remove()">`:""}<span class="ct">${esc(b.title)}</span>${extra}</div>`;
 }
 function sheet(d){d.showModal();d.opened=performance.now();d.querySelector(".body").scrollTop=0}
 // tap on the dimmed backdrop closes a sheet; ignore the click a touch synthesises right
@@ -2049,7 +2051,7 @@ async function loadFriends(){
     const seen=new Set();F.reading=list.filter(b=>!seen.has(b.username)&&seen.add(b.username));
     $("#frWrap").hidden=!F.reading.length;
     $("#frRail").innerHTML=F.reading.map((b,i)=>`<button class="story" data-fr="${i}" aria-label="${esc(b.display_name)} is reading ${esc(b.title)}, ${b.pct}%">
-      <span class="ring" style="--p:${b.pct}"><span class="disc">${b.cover_url?`<img src="${esc(b.cover_url)}" alt="" loading="lazy" onerror="this.replaceWith(document.createRange().createContextualFragment(this.dataset.av))" data-av="${esc(avatar(b))}">`:avatar(b)}</span>${b.cover_url?avatar(b):""}</span>
+      <span class="ring" style="--p:${b.pct}"><span class="disc">${b.cover_url?`<img src="${esc(coverSrc(b.cover_url))}" alt="" loading="lazy" onerror="this.replaceWith(document.createRange().createContextualFragment(this.dataset.av))" data-av="${esc(avatar(b))}">`:avatar(b)}</span>${b.cover_url?avatar(b):""}</span>
       <span class="n">${esc(b.display_name.split(" ")[0])}</span><small>${b.pct}%</small></button>`).join("");
   }).catch(()=>{});
   F.before=0;F.events=[];F.busy=false;F.day="";
@@ -2304,7 +2306,7 @@ function renderProfile(){
     ${S.me?.is_admin&&!p.me?`<button class="ghost sm" data-resetlink style="margin:-6px 0 12px;padding-left:0">Locked out? Make a password reset link</button>`:""}
     ${p.can_see?`<div class="stats">${[[s.read_this_year,"read in "+new Date().getFullYear()],[s.read,"books read"],[s.reading,"reading now"],[s.want,"want to read"]]
         .map(([n,l])=>`<div class="stat"><b>${n}</b><span>${l}</span></div>`).join("")}</div>
-      ${p.in_common.length?`<div class="common"><div class="stack">${p.in_common.slice(0,4).map(b=>b.cover_url?`<img src="${esc(b.cover_url)}" alt="">`:"").join("")}</div>
+      ${p.in_common.length?`<div class="common"><div class="stack">${p.in_common.slice(0,4).map(b=>b.cover_url?`<img src="${esc(coverSrc(b.cover_url))}" alt="">`:"").join("")}</div>
         <div>You've both read <b>${p.in_common.length}</b> book${p.in_common.length>1?"s":""}</div></div>`:""}
       <div class="hrow" id="ptabs">${tabs.map(([k,l,n])=>`<button class="chip ${PR.tab===k?"on":""}" data-ptab="${k}">${l}${n?`<small>${n}</small>`:""}</button>`).join("")}</div>
       <div id="pgrid"></div>`

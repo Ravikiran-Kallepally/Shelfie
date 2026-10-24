@@ -124,7 +124,7 @@ footer a{text-decoration:none;font-weight:600}
 <nav class="top"><div class="wrap">
   <a class="logo" href="/">Shelf<span>ie</span></a>
   <a class="signin" href="/app">Sign in</a>
-  <button class="btn primary small" data-guest>Start reading</button>
+  <a class="btn primary small" href="/app">Continue on web</a>
 </div></nav>
 
 <header class="hero"><div class="wrap">
@@ -133,12 +133,12 @@ footer a{text-decoration:none;font-weight:600}
     <h1>Read beautifully. <em>Together.</em></h1>
     <p class="lede">A calm, gorgeous reader for 70,000+ free classics, with your shelves, highlights and reading stats, and friends to read alongside. No paywalls, ever.</p>
     <div class="ctas">
-      <button class="btn primary" data-guest>Start reading free</button>
+      <a class="btn primary" href="/app">Continue on web</a>
       <a class="btn" href="/download/android" id="apkBtn" hidden>
         <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 18c0 .55.45 1 1 1h1v3.5a1.5 1.5 0 0 0 3 0V19h2v3.5a1.5 1.5 0 0 0 3 0V19h1c.55 0 1-.45 1-1V8H6zM3.5 8A1.5 1.5 0 0 0 2 9.5v7a1.5 1.5 0 0 0 3 0v-7A1.5 1.5 0 0 0 3.5 8m17 0A1.5 1.5 0 0 0 19 9.5v7a1.5 1.5 0 0 0 3 0v-7A1.5 1.5 0 0 0 20.5 8m-4.97-5.84 1.3-1.3a.5.5 0 0 0-.7-.71L13.65 1.6A5.9 5.9 0 0 0 12 1.36c-.58 0-1.13.09-1.65.24L8.87.15a.5.5 0 0 0-.71.71l1.31 1.31A5.98 5.98 0 0 0 6 7h12a5.98 5.98 0 0 0-2.47-4.84M10 5H9V4h1zm5 0h-1V4h1z"/></svg>
         Android app</a>
     </div>
-    <p class="fine">No account needed to start. Your books stay yours: export everything anytime.</p>
+    <p class="fine">New here? <a href="#" data-guest style="font-weight:600;color:var(--accent)">Start reading as a guest</a>, no account or invite needed.</p>
   </div>
   <div class="duo">
     <div class="phone back"><img src="/static/site/feed.jpg" alt="Shelfie's friends feed: Asha finished Dracula with a review and a favourite line"></div>
@@ -218,8 +218,12 @@ footer a{text-decoration:none;font-weight:600}
 
 <section class="join" id="join"><div class="wrap"><div class="box">
   <h2>Start reading today</h2>
-  <p>Read and keep your shelves as a guest right now, no invite needed. Friends and buddy reads open up when you join.</p>
-  <button class="btn primary" data-guest style="min-width:240px">Start reading free</button>
+  <p>Read in your browser or the Android app. No invite needed to start: friends and buddy reads open up when you join.</p>
+  <div class="ctas" style="justify-content:center">
+    <a class="btn primary" href="/app" style="min-width:200px">Continue on web</a>
+    <a class="btn" href="/download/android" id="apkBtn2" hidden>Get the Android app</a>
+  </div>
+  <p class="fine">or <a href="#" data-guest style="font-weight:600;color:var(--accent)">start as a guest</a> right now</p>
   <div class="or">Shelfie is invite-only while it grows</div>
   <form class="wl" id="wl"><input type="email" required maxlength="254" placeholder="you@example.com" autocomplete="email" aria-label="Your email"><button class="btn" type="submit">Request invite</button></form>
   <div class="msg" id="wlMsg" role="status"></div>
@@ -233,13 +237,13 @@ footer a{text-decoration:none;font-weight:600}
 
 <script>
 // start as a guest: one tap, no form
-document.querySelectorAll("[data-guest]").forEach(b=>b.addEventListener("click",async()=>{
-  b.disabled=true;const label=b.textContent;b.textContent="Opening Shelfie…";
+document.querySelectorAll("[data-guest]").forEach(b=>b.addEventListener("click",async e=>{
+  e.preventDefault();if(b.dataset.busy)return;b.dataset.busy=1;const label=b.textContent;b.textContent="Opening Shelfie…";
   try{const r=await fetch("/api/auth/guest",{method:"POST"});if(!r.ok)throw 0;location.href="/app"}
-  catch{b.disabled=false;b.textContent=label;alert("Couldn't start right now. Please try again in a minute.")}
+  catch{delete b.dataset.busy;b.textContent=label;alert("Couldn't start right now. Please try again in a minute.")}
 }));
 // the Android app link appears once a build is available
-fetch("/api/site").then(r=>r.json()).then(s=>{if(s.apk){const a=document.getElementById("apkBtn");a.hidden=false;a.title=`Shelfie for Android · ${s.apk_mb} MB`}}).catch(()=>{});
+fetch("/api/site").then(r=>r.json()).then(s=>{if(s.apk)for(const id of ["apkBtn","apkBtn2"]){const a=document.getElementById(id);a.hidden=false;a.title=`Shelfie for Android · ${s.apk_mb} MB`}}).catch(()=>{});
 document.getElementById("wl").addEventListener("submit",async e=>{
   e.preventDefault();const f=e.target,msg=document.getElementById("wlMsg"),btn=f.querySelector("button");btn.disabled=true;
   try{

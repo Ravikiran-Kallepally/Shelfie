@@ -4,6 +4,7 @@ Run:  uvicorn app:app
 """
 import asyncio
 import csv
+import hashlib
 import io
 import json
 import re
@@ -964,6 +965,52 @@ def service_worker():
 @app.get("/favicon.ico", include_in_schema=False)
 def favicon():
     return FileResponse(BASE / "static" / "icon.svg", media_type="image/svg+xml")
+
+
+# ---------- book covers ----------
+# Covers are fetched by the server and served from Shelfie itself: some networks, DNS blockers
+# and app webviews block gutenberg.org images, and this keeps readers' IPs away from third parties.
+COVER_HOSTS = {"www.gutenberg.org", "gutenberg.org", "covers.openlibrary.org"}
+COVERS = CACHE / "covers"
+COVERS.mkdir(exist_ok=True)
+COVER_MAX = 3 * 1024 * 1024
+_cover_jobs: dict[str, asyncio.Task] = {}
+
+
+async def _fetch_cover(url: str, path) -> bool:
+    try:
+        async with httpx.AsyncClient(timeout=15, follow_redirects=True) as client:
+            r = await client.get(url, headers={"User-Agent": "Shelfie/0.1 (+https://shelfie-ravikiran.fly.dev)"})
+    except httpx.HTTPError:
+        return False
+    if r.status_code != 200 or not r.headers.get("content-type", "").startswith("image/") or len(r.content) > COVER_MAX:
+        return False
+    path.write_bytes(r.content)
+    return True
+
+
+@app.get("/api/cover")
+async def cover(u: str):
+    """A book cover from Gutenberg or Open Library, cached on disk. Only those hosts: no open proxy."""
+    parsed = urlparse(u)
+    if parsed.scheme != "https" or parsed.hostname not in COVER_HOSTS:
+        raise HTTPException(400, "not a cover address")
+    path = COVERS / hashlib.sha256(u.encode()).hexdigest()
+    missing = path.with_suffix(".none")
+    if not path.exists():
+        if missing.exists() and time.time() - missing.stat().st_mtime < 7 * 86400:
+            raise HTTPException(404)  # remembered: this book has no cover
+        job = _cover_jobs.get(u) or _cover_jobs.setdefault(u, asyncio.create_task(_fetch_cover(u, path)))
+        try:
+            ok = await job
+        finally:
+            _cover_jobs.pop(u, None)
+        if not ok:
+            missing.touch()
+            raise HTTPException(404)
+    head = path.read_bytes()[:4]
+    kind = "image/png" if head.startswith(b"\x89PNG") else "image/gif" if head.startswith(b"GIF8") else "image/jpeg"
+    return FileResponse(path, media_type=kind, headers={"Cache-Control": "public, max-age=2592000"})
 
 
 APK = DATA / "downloads" / "Shelfie.apk"
