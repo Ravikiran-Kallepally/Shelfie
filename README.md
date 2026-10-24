@@ -27,8 +27,13 @@ Needs Node 22+, JDK 21 and the Android SDK.
 
     cd mobile
     npm install
-    node set-server.mjs http://<your computer's IP>:8000   # or your https address once deployed
-    npm run apk        # -> android/app/build/outputs/apk/debug/app-debug.apk
+    node set-server.mjs https://shelfie-ravikiran.fly.dev   # or http://<your PC's IP>:8000 to test
+    npm run apk        # debug build -> android/app/build/outputs/apk/debug/app-debug.apk
+    cd android && gradlew.bat assembleRelease   # signed release -> .../apk/release/app-release.apk
+
+Release builds are signed with `android/shelfie-release.jks`, configured in
+`android/keystore.properties`. Both are kept out of git; back them up, because every future
+update must be signed with the same key or Android refuses to install it.
 
 Plain `http://` is allowed only so a test build can reach a server on your own Wi-Fi; point
 release builds at an https address. Icons and splash screens are generated from
@@ -47,14 +52,20 @@ A private account must approve followers. Highlights stay private unless you sha
 Anyone with your link can see a public profile, signed in or not.
 
 ## Deploy (Fly.io)
-1. Install `flyctl` and sign in (`fly auth login`).
-2. Edit `fly.toml`: pick a unique `app` name and a `primary_region` near you.
-3. `fly launch --no-deploy --copy-config`, then `fly volumes create shelfie_data --size 1`
-4. `fly deploy`, then open `https://<app>.fly.dev` and create your account.
+Live at https://shelfie-ravikiran.fly.dev (app `shelfie-ravikiran`, region `ord`, one machine
+with a 1 GB volume that Fly snapshots daily). To ship a change:
 
-To bring your current library: before step 4's first sign-up, copy `shelfie.db` to the volume
-(`fly ssh sftp shell`, then `put shelfie.db /data/shelfie.db`) and restart the app.
-SQLite lives on one volume, so run exactly one machine.
+    fly deploy --ha=false
+
+Keep it to one machine: the SQLite database lives on that machine's volume. Useful commands:
+`fly logs`, `fly ssh console`, `fly volumes snapshots list shelfie_data`.
+
+To run your own copy: `fly apps create <name>`, `fly volumes create shelfie_data --size 1`,
+set `app` and `primary_region` in `fly.toml`, then deploy. The first account created on a fresh
+server becomes the owner, so sign up right after the first deploy (or upload an existing
+`shelfie.db` to `/data` with `fly ssh sftp put` and restart).
+
+The Android app offered on the website is `/data/downloads/Shelfie.apk` on the volume.
 
 ## Features
 - Shelves (Want to read / Reading / Read / Did not finish), progress, half-star ratings, reviews

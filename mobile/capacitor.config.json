@@ -3,8 +3,8 @@
   "appName": "Shelfie",
   "webDir": "www",
   "server": {
-    "url": "http://10.0.0.84:8000",
-    "cleartext": true,
+    "url": "https://shelfie-ravikiran.fly.dev",
+    "cleartext": false,
     "errorPath": "offline.html"
   },
   "android": {
