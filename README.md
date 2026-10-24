@@ -18,6 +18,22 @@ To use it on your phone at home, start it on your network and open
 
 Offline reading and keeping the screen awake need https (see Deploy).
 
+## Android app (`mobile/`)
+A Capacitor shell around the web app, so the APK always runs the server's current UI. It adds
+the hardware back button (closes sheets, then the reader, then goes back), a themed status bar,
+keep-screen-on while reading, Android's share sheet, a splash screen and an offline screen.
+
+Needs Node 22+, JDK 21 and the Android SDK.
+
+    cd mobile
+    npm install
+    node set-server.mjs http://<your computer's IP>:8000   # or your https address once deployed
+    npm run apk        # -> android/app/build/outputs/apk/debug/app-debug.apk
+
+Plain `http://` is allowed only so a test build can reach a server on your own Wi-Fi; point
+release builds at an https address. Icons and splash screens are generated from
+`mobile/assets/` (`python make-assets.py`, then `npx capacitor-assets generate --android`).
+
 ## Code
 - `app.py`: library, lists, import/export, highlights, the Gutenberg catalog and book text, page routes
 - `auth.py`: accounts, invites, sessions (scrypt password hashes, hashed session tokens)

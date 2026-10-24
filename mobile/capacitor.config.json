@@ -1,0 +1,22 @@
+{
+  "appId": "io.github.ravikirankallepally.shelfie",
+  "appName": "Shelfie",
+  "webDir": "www",
+  "server": {
+    "url": "http://10.0.0.84:8000",
+    "cleartext": true,
+    "errorPath": "offline.html"
+  },
+  "android": {
+    "appendUserAgent": "ShelfieApp/0.1",
+    "backgroundColor": "#f6f1e7"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 700,
+      "launchAutoHide": true,
+      "backgroundColor": "#f6f1e7",
+      "showSpinner": false
+    }
+  }
+}

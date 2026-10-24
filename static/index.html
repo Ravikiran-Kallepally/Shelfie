@@ -975,7 +975,7 @@ async function action(a){
   if(a==="stats"){openStats();return}
   if(a==="compose"){openCompose();return}
   if(a==="activity"){openActivity();return}
-  if(a==="exporthl"){location.href="/api/export/highlights.md";$("#menuDlg").close();return}
+  if(a==="exporthl"){$("#menuDlg").close();if(CAP)return shareExport("/api/export/highlights.md","Shelfie highlights");location.href="/api/export/highlights.md";return}
   if(a==="people"){openPeople("search");return}
   if(a==="invite"){shareInvite();return}
   if(a==="settings"){openSettings();return}
@@ -983,7 +983,7 @@ async function action(a){
   if(a==="signin"){showAuth("login");return}
   if(a==="add"){$("#sres").innerHTML="";$("#sq").value="";sQ="";sheet($("#addDlg"));setTimeout(()=>$("#sq").focus(),300);return}
   if(a==="menu"){$("#impBox").hidden=true;sheet($("#menuDlg"));return}
-  if(a==="export"){location.href="/api/export/csv";$("#menuDlg").close();return}
+  if(a==="export"){$("#menuDlg").close();if(CAP)return shareExport("/api/export/csv","Shelfie library (CSV)");location.href="/api/export/csv";return}
   if(a==="import"){$("#impBox").hidden=false;$("#impRes").textContent="";$("#impFile").value="";$("#impFile").click();return}
   if(a==="newlist"){
     const n=prompt("Name your list");if(!n?.trim())return;
@@ -1599,6 +1599,7 @@ let themeMeta;
 function themeColor(c){
   if(!themeMeta){themeMeta=document.createElement("meta");themeMeta.name="theme-color";}
   if(c){themeMeta.content=c;document.head.appendChild(themeMeta)}else themeMeta.remove();
+  nativeBars(c);
 }
 async function relayout(){ // after a size/font/spacing change: keep the same paragraph on screen
   if(!R.ready)return;
@@ -1652,6 +1653,7 @@ function hideReader(){
 }
 addEventListener("popstate",()=>{if(!reader.hidden)hideReader();else route()});
 async function wake(on){
+  if(CAP?.Plugins.KeepAwake){try{await CAP.Plugins.KeepAwake[on?"keepAwake":"allowSleep"]()}catch{}return}
   try{
     if(on&&!R.lock&&navigator.wakeLock){R.lock=await navigator.wakeLock.request("screen");R.lock.addEventListener("release",()=>R.lock=null)}
     if(!on&&R.lock){await R.lock.release();R.lock=null}
@@ -2312,13 +2314,13 @@ async function toggleFollow(username,current){
 }
 async function shareProfile(){
   const u=PR.data.user,url=location.origin+"/@"+u.username;
-  if(navigator.share){try{await navigator.share({title:`${u.display_name} on Shelfie`,url});return}catch(e){if(e.name==="AbortError")return}}
+  if(await shareSheet({title:`${u.display_name} on Shelfie`,url}))return;
   copyText(url,"Profile link copied");
 }
 async function shareInvite(){
   try{
     const {code}=await api("/invites",{method:"POST"}),url=location.origin+"/join/"+code;
-    if(navigator.share){try{await navigator.share({title:"Join me on Shelfie",text:`${S.me.display_name} invited you to Shelfie`,url});return}catch(e){if(e.name==="AbortError")return}}
+    if(await shareSheet({title:"Join me on Shelfie",text:`${S.me.display_name} invited you to Shelfie`,url}))return;
     copyText(url,"Invite link copied. Send it to a friend");
     if($("#settingsDlg").open)renderInvites();
   }catch(err){toast(errMsg(err))}
@@ -2373,6 +2375,48 @@ $("#pwSave").onclick=async()=>{
   catch(err){toast(errMsg(err))}
 };
 $("#signOut").onclick=logout;
+
+/* ================= inside the Android app =================
+   The APK (mobile/) is a Capacitor shell that loads this page from the server; these hooks
+   only switch on there. */
+const CAP=window.Capacitor?.isNativePlatform?.()?window.Capacitor:null;
+async function shareSheet(opts){
+  try{
+    if(CAP?.Plugins.Share){await CAP.Plugins.Share.share(opts);return true}
+    if(navigator.share){await navigator.share(opts);return true}
+  }catch(e){if(e.name==="AbortError"||/cancel/i.test(e.message||""))return true}
+  return false;
+}
+async function shareExport(path,title){
+  try{const r=await fetch("/api"+path.replace(/^\/api/,""));if(!r.ok)throw 0;await CAP.Plugins.Share.share({title,text:await r.text()})}
+  catch{toast("Couldn't export right now")}
+}
+function nativeBars(color){
+  const SB=CAP?.Plugins.StatusBar;if(!SB)return;
+  const bg=color||getComputedStyle(document.body).backgroundColor;
+  // pick light or dark status-bar icons from how bright the background is
+  const ctx=document.createElement("canvas").getContext("2d");ctx.fillStyle=bg;ctx.fillRect(0,0,1,1);
+  const [r,g,b]=ctx.getImageData(0,0,1,1).data,light=(r*299+g*587+b*114)/1000>140;
+  SB.setStyle({style:light?"LIGHT":"DARK"}).catch(()=>{});
+  SB.setBackgroundColor?.({color:"#"+[r,g,b].map(v=>v.toString(16).padStart(2,"0")).join("")}).catch(()=>{});
+}
+if(CAP){
+  document.documentElement.classList.add("native");
+  nativeBars();
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{if(reader.hidden)nativeBars()});
+  // Android back: close the top sheet, then the reader, then go back a page; only leave from home
+  CAP.Plugins.App?.addListener("backButton",()=>{
+    const open=[...document.querySelectorAll("dialog[open]")].pop();
+    if(open){open.close();return}
+    if(!$("#authView").hidden){CAP.Plugins.App.exitApp();return}
+    if(!reader.hidden){closeReader();return}
+    if(SEL.on){selectMode(false);return}
+    if(location.pathname!=="/"){history.length>1?history.back():nav("/");return}
+    CAP.Plugins.App.exitApp();
+  });
+  // coming back to the app: pick up new feed posts and activity
+  CAP.Plugins.App?.addListener("resume",()=>{if(!S.me)return;refreshBell();if(S.view==="friends")loadFriends();else if(S.view==="library")load()});
+}
 
 /* boot */
 if("serviceWorker" in navigator)navigator.serviceWorker.register("/sw.js").catch(()=>{}); // needs https or localhost

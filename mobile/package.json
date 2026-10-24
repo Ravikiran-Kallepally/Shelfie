@@ -1,0 +1,23 @@
+{
+  "name": "shelfie-mobile",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Android app for Shelfie: a native shell around the Shelfie web app",
+  "scripts": {
+    "sync": "cap sync android",
+    "apk": "cap sync android && cd android && gradlew.bat assembleDebug"
+  },
+  "dependencies": {
+    "@capacitor-community/keep-awake": "^8.0.1",
+    "@capacitor/android": "^8.5.3",
+    "@capacitor/app": "^8.1.2",
+    "@capacitor/core": "^8.5.3",
+    "@capacitor/share": "^8.0.3",
+    "@capacitor/splash-screen": "^8.0.2",
+    "@capacitor/status-bar": "^8.0.4"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^8.5.3"
+  }
+}

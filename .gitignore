@@ -9,3 +9,11 @@ __pycache__/
 .venv/
 venv/
 .env
+# Android app: dependencies, build outputs, built APKs and signing keys
+mobile/node_modules/
+mobile/dist/
+*.apk
+*.aab
+*.jks
+*.keystore
+keystore.properties
