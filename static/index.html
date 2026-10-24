@@ -384,22 +384,83 @@ body.anon{padding-bottom:24px}
 .common .stack img:first-child{margin-left:0}
 .joinbar{position:sticky;top:0;z-index:21;display:flex;align-items:center;gap:10px;padding:calc(8px + var(--sat)) 16px 8px;background:var(--accent);color:var(--accent-ink);font-size:14px}
 .joinbar button{background:var(--accent-ink);color:var(--accent);border:none;padding:6px 14px}
-/* ---- feed ---- */
-.ev{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;margin-bottom:12px}
-.ev .top{display:flex;gap:10px;align-items:center;font-size:14px;line-height:1.35}
-.ev .top b{cursor:pointer}
-.ev .top time{display:block;color:var(--muted);font-size:12px}
-.ev .bk{display:flex;gap:12px;margin-top:12px;cursor:pointer}
-.ev .bk .cover{width:56px;flex:none;font-size:8px;padding:4px}
-.ev .bk .t{font:600 16px/1.3 var(--serif)}
-.ev .bk .a{color:var(--muted);font-size:13px}
-.ev .rev{margin:10px 0 0;font:15px/1.55 var(--serif);display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden}
-.ev blockquote{margin:12px 0 0;padding:2px 0 2px 12px;border-left:4px solid #ffd43b;font:16px/1.55 var(--serif)}
-.ev .foot{display:flex;align-items:center;gap:8px;margin-top:10px}
+/* ---- feed: each kind of moment has its own look ---- */
+.dayhdr{font:600 12px/1 system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:22px 4px 10px;display:flex;align-items:center;gap:10px}
+.dayhdr::after{content:"";flex:1;height:1px;background:var(--line)}
+.ev{position:relative;overflow:hidden;background:var(--card);border:1px solid var(--line);border-radius:22px;padding:14px 14px 8px;margin-bottom:14px;
+  animation:evin .4s var(--ease) backwards;animation-delay:var(--d,0ms)}
+@keyframes evin{from{opacity:0;transform:translateY(10px)}}
+.ev>*{position:relative}
+.evh{display:flex;gap:10px;align-items:center;font-size:14px;line-height:1.3}
+.evh .who{flex:1;min-width:0}
+.evh b{cursor:pointer;font-weight:650}
+.evh .vb{color:var(--muted)}
+.evh time{display:block;color:var(--muted);font-size:12px;margin-top:1px}
+.evh .av{width:38px;height:38px;font-size:14px}
+.eva{display:flex;align-items:center;gap:8px;margin:10px -4px 0}
+.pill{border-radius:99px;padding:7px 14px;font-size:13px;font-weight:600}
+.pill.solid{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.mine{font-size:13px;color:var(--ok);font-weight:600;padding:0 6px}
 .heart{border:none;background:none;padding:6px 8px;color:var(--muted);font-size:14px;display:flex;align-items:center;gap:6px}
-.heart svg{width:20px;height:20px}
+.heart svg{width:22px;height:22px;transition:transform .2s var(--ease)}
 .heart.on{color:#e0457b}
 .heart.on svg{fill:#e0457b;stroke:#e0457b}
+.heart.pop svg{animation:pop2 .45s var(--ease)}
+@keyframes pop2{30%{transform:scale(1.45) rotate(-8deg)}60%{transform:scale(.9)}}
+/* finished / rated: the big moment, over a soft blur of the cover */
+.evbg{position:absolute!important;inset:-40px;background-size:cover;background-position:center;filter:blur(36px) saturate(1.6);opacity:.32;pointer-events:none}
+@media (prefers-color-scheme: dark){.evbg{opacity:.4}}
+.evhero{display:flex;gap:16px;align-items:flex-end;margin:16px 0 4px;cursor:pointer}
+.evhero .cover{width:108px;flex:none;font-size:11px;box-shadow:0 10px 28px rgba(0,0,0,.28),0 2px 6px rgba(0,0,0,.15);transform:rotate(-2deg)}
+.evhero .t{font:600 21px/1.2 var(--serif);letter-spacing:-.01em;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.evhero .a{color:var(--muted);font-size:14px;margin-top:2px}
+.tag{display:inline-block;font:700 10px/1 system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;padding:5px 8px;border-radius:99px;background:var(--ink);color:var(--bg);margin-bottom:8px}
+.tag.done{background:var(--ok);color:#fff}
+.bigstars{color:var(--star);font-size:22px;letter-spacing:2px;margin-top:6px}
+.bigstars .off{color:color-mix(in srgb,var(--ink) 18%,transparent)}
+.bigstars .half{background:linear-gradient(90deg,var(--star) 50%,color-mix(in srgb,var(--ink) 18%,transparent) 50%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.ev .rev{margin:12px 0 0;font:16px/1.6 var(--serif);display:-webkit-box;-webkit-line-clamp:6;-webkit-box-orient:vertical;overflow:hidden}
+/* review: a pull quote */
+.pullq{position:relative;margin:14px 0 4px;padding:4px 0 0 34px;font:17px/1.6 var(--serif)}
+.pullq::before{content:"\201C";position:absolute;left:-2px;top:-14px;font:700 64px/1 Georgia,serif;color:var(--accent);opacity:.85}
+.pullq p{margin:0;display:-webkit-box;-webkit-line-clamp:7;-webkit-box-orient:vertical;overflow:hidden}
+/* highlight: a quote card in the highlight's colour */
+.qcard{margin:14px 0 4px;padding:22px 20px 16px;border-radius:18px;background:color-mix(in srgb,var(--qc,#ffd43b) 24%,var(--card));cursor:pointer;position:relative}
+.qcard::before{content:"\201C";position:absolute;left:14px;top:2px;font:700 54px/1 Georgia,serif;color:color-mix(in srgb,var(--qc,#ffd43b) 70%,var(--ink));opacity:.6}
+.qcard blockquote{margin:12px 0 0;font:19px/1.55 var(--serif);letter-spacing:-.005em;display:-webkit-box;-webkit-line-clamp:9;-webkit-box-orient:vertical;overflow:hidden}
+.qcard figcaption{margin-top:12px;font-size:13px;color:var(--muted)}
+.qcard figcaption i{color:var(--ink);font-style:italic}
+.qnote{margin:10px 2px 0;font-size:14px;line-height:1.5}
+.qnote b{font-weight:650}
+/* started: a slim row */
+.ev.slim{padding:12px 14px}
+.slimrow{display:flex;gap:12px;align-items:center;cursor:pointer}
+.slimrow .cover{width:40px;flex:none;font-size:0;padding:0;border-radius:3px 6px 6px 3px}
+.slimrow .txt{flex:1;min-width:0;font-size:14px;line-height:1.35}
+.slimrow .txt i{font-style:normal;font-family:var(--serif);font-weight:600}
+.slimrow time{display:block;color:var(--muted);font-size:12px}
+/* want-to-read saves, grouped into one little shelf */
+.minishelf{display:flex;gap:10px;overflow-x:auto;margin:12px -14px 6px;padding:2px 14px 4px;scrollbar-width:none}
+.minishelf::-webkit-scrollbar{display:none}
+.minishelf .book{flex:0 0 84px}
+.minishelf .cover{font-size:9px}
+.minishelf .t{font-size:12px}
+.bkrow{display:flex;gap:12px;align-items:center;margin-top:12px;cursor:pointer}
+.bkrow .cover{width:46px;flex:none;font-size:0;padding:0}
+.bkrow .t{font:600 15px/1.3 var(--serif)}
+.bkrow .a{color:var(--muted);font-size:13px}
+/* reading now: story circles with a progress ring */
+.stories{display:flex;gap:14px;overflow-x:auto;margin:4px -16px 6px;padding:6px 16px 10px;scrollbar-width:none}
+.stories::-webkit-scrollbar{display:none}
+.story{flex:none;width:76px;border:none;background:none;padding:0;display:flex;flex-direction:column;align-items:center;gap:6px;font-size:12px;color:var(--ink)}
+.story:active{transform:scale(.95)}
+.ring{width:72px;height:72px;border-radius:50%;padding:3px;background:conic-gradient(var(--accent) calc(var(--p)*1%),var(--line) 0);position:relative}
+.ring .disc{display:block;width:100%;height:100%;border-radius:50%;border:3px solid var(--bg);overflow:hidden;background:var(--line)}
+.ring .disc img{width:100%;height:100%;object-fit:cover;object-position:top}
+.ring .disc .av{width:100%;height:100%;font-size:20px}
+.ring>.av{position:absolute;right:-2px;bottom:-2px;width:26px;height:26px;font-size:10px;box-shadow:0 0 0 2px var(--bg)}
+.story span.n{max-width:76px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.story small{color:var(--muted);font-size:11px;margin-top:-4px}
 .reqs{background:var(--card);border:1px solid var(--accent);border-radius:16px;padding:6px 12px;margin-bottom:14px}
 /* ---- settings ---- */
 .switch{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;cursor:pointer}
@@ -472,7 +533,7 @@ body.anon{padding-bottom:24px}
       <button class="sm" data-act="people">Find people</button><button class="primary sm" data-act="invite">Invite</button></div>
     <div id="buddyWrap"></div>
     <div id="reqs"></div>
-    <div id="frWrap" hidden><div class="h2" style="font-size:17px;margin-top:6px">Reading now</div><div class="rail" id="frRail"></div></div>
+    <div id="frWrap" hidden><div class="stories" id="frRail"></div></div>
     <div id="feed"></div>
     <div id="feedMore"></div>
   </section>
@@ -1879,13 +1940,15 @@ async function loadFriends(){
        <button class="primary sm" data-req="ok" data-u="${u.username}">Accept</button><button class="sm" data-req="no" data-u="${u.username}">Decline</button></div>`).join("")}</div>`:"";
   }).catch(()=>{});
   api("/friends/reading").then(list=>{
-    F.reading=list;$("#frWrap").hidden=!list.length;
-    $("#frRail").innerHTML=list.map((b,i)=>`<div class="hero" data-fr="${i}">${coverHTML(b)}<div class="meta"><b>${esc(b.title)}</b><div class="a">${esc(b.author)}</div>
-      <div class="prog"><div class="bar"><i style="width:${b.pct}%"></i></div>${b.pct}%</div>
-      <div class="row" style="gap:8px;margin-top:8px;font-size:13px" data-user="${b.username}">${avatar(b,"sm")}<span>${esc(b.display_name)}</span></div></div></div>`).join("");
+    // one circle per friend (their most recent book), ring = how far they are
+    const seen=new Set();F.reading=list.filter(b=>!seen.has(b.username)&&seen.add(b.username));
+    $("#frWrap").hidden=!F.reading.length;
+    $("#frRail").innerHTML=F.reading.map((b,i)=>`<button class="story" data-fr="${i}" aria-label="${esc(b.display_name)} is reading ${esc(b.title)}, ${b.pct}%">
+      <span class="ring" style="--p:${b.pct}"><span class="disc">${b.cover_url?`<img src="${esc(b.cover_url)}" alt="" loading="lazy" onerror="this.replaceWith(document.createRange().createContextualFragment(this.dataset.av))" data-av="${esc(avatar(b))}">`:avatar(b)}</span>${b.cover_url?avatar(b):""}</span>
+      <span class="n">${esc(b.display_name.split(" ")[0])}</span><small>${b.pct}%</small></button>`).join("");
   }).catch(()=>{});
-  F.before=0;F.events=[];F.busy=false;
-  $("#feed").innerHTML=`<div class="ev" style="height:150px;opacity:.5"></div>`.repeat(3);
+  F.before=0;F.events=[];F.busy=false;F.day="";
+  $("#feed").innerHTML=`<div class="ev" style="height:150px;opacity:.5;animation:pulse 1.2s ease-in-out infinite"></div>`.repeat(3);
   moreFeed(true);
 }
 async function moreFeed(reset){
@@ -1893,24 +1956,79 @@ async function moreFeed(reset){
   let r;try{r=await api("/feed"+(F.before?"?before="+F.before:""))}catch{F.busy=false;if(reset)$("#feed").innerHTML=`<div class="empty">Couldn't load your feed.</div>`;return}
   F.busy=false;
   const from=F.events.length;F.events.push(...r.events);F.before=r.before;
-  const html=r.events.map((e,j)=>evHTML(e,from+j)).join("");
-  if(reset)$("#feed").innerHTML=html||`<div class="empty"><b>Nothing here yet</b>Invite friends or follow people to see what they're reading.<br><button class="primary" data-act="invite">Invite a friend</button></div>`;
+  const html=feedHTML(r.events,from);
+  if(reset)$("#feed").innerHTML=html||`<div class="empty"><b>Your feed is waiting for friends</b>When people you follow start, finish or highlight a book, it shows up here.<br><button class="primary" data-act="invite">Invite a friend</button></div>`;
   else $("#feed").insertAdjacentHTML("beforeend",html);
   if(F.before)feedObs.observe($("#feedMore"));
 }
 const feedObs=new IntersectionObserver(es=>{if(es[0].isIntersecting&&S.view==="friends"){feedObs.unobserve($("#feedMore"));moreFeed(false)}},{rootMargin:"600px"});
+function dayLabel(iso){
+  const d=new Date(iso+"Z"),t=new Date(),y=new Date(Date.now()-864e5),same=(a,b)=>a.toDateString()===b.toDateString();
+  if(same(d,t))return"Today";if(same(d,y))return"Yesterday";
+  if(t-d<6*864e5)return d.toLocaleDateString(undefined,{weekday:"long"});
+  return d.toLocaleDateString(undefined,{month:"long",day:"numeric",year:d.getFullYear()===t.getFullYear()?undefined:"numeric"});
+}
+// one person's run of want-to-read saves on the same day becomes a single little shelf
+function feedHTML(events,from){
+  const items=[];
+  events.forEach((e,j)=>{
+    const last=items.at(-1);
+    if(e.kind==="want"&&last?.want&&last.user===e.username&&dayLabel(F.events[last.idx[0]].created_at)===dayLabel(e.created_at)){last.idx.push(from+j);return}
+    items.push({want:e.kind==="want",user:e.username,idx:[from+j]});
+  });
+  let h="";
+  items.forEach((it,n)=>{
+    const e=F.events[it.idx[0]],day=dayLabel(e.created_at);
+    if(day!==F.day){F.day=day;h+=`<div class="dayhdr">${day}</div>`}
+    h+=(it.want?wantHTML(it.idx):evHTML(e,it.idx[0])).replace("<article ",`<article style="--d:${Math.min(n,6)*45}ms" `);
+  });
+  return h;
+}
+const who=e=>`<b data-user="${e.username}">${e.mine?"You":esc(e.display_name)}</b>`;
+function evHead(e,verb){
+  return `<header class="evh"><span data-user="${e.username}" style="cursor:pointer">${avatar(e)}</span>
+    <div class="who">${who(e)} <span class="vb">${verb}</span><time>${ago(e.created_at)}</time></div></header>`;
+}
+function evActions(e,i){
+  return `<footer class="eva"><button class="heart ${e.liked?"on":""}" data-like="${i}" aria-label="${e.liked?"Unlike":"Like"}">${HEART}<span>${e.likes||""}</span></button>
+    <div style="flex:1"></div>
+    ${e.mine?"":e.my_entry?`<span class="mine">✓ On your shelf</span>`:`<button class="pill" data-fwant="${i}">+ Want to read</button>`}
+    ${e.gutenberg_id&&!e.mine&&!e.my_entry?`<button class="pill solid" data-evread="${i}">Read free</button>`:""}</footer>`;
+}
 function evHTML(e,i){
-  const verb={started:"started reading",finished:"finished",rated:"rated",reviewed:"reviewed",want:"wants to read",highlight:"highlighted a passage in",
-    buddy:`is reading this with ${esc((e.data.with||[]).join(", "))}`}[e.kind]||e.kind;
-  const rating=e.kind==="finished"||e.kind==="rated"?e.data.rating||e.rating:e.kind==="reviewed"?e.rating:null;
-  return `<article class="ev">
-    <div class="top"><span data-user="${e.username}" style="cursor:pointer">${avatar(e)}</span>
-      <div><b data-user="${e.username}">${e.mine?"You":esc(e.display_name)}</b> ${verb}${rating?` <span class="stars">${stars(rating)}</span>`:""}<time>${ago(e.created_at)}</time></div></div>
-    ${e.kind==="highlight"?`<blockquote>${esc(e.quote)}</blockquote>${e.quote_note?`<p class="rev" style="font:14px/1.5 inherit">${esc(e.quote_note)}</p>`:""}`:""}
-    <div class="bk" data-fb="${i}">${coverHTML(e)}<div style="min-width:0"><div class="t">${esc(e.title)}</div><div class="a">${esc(e.author)}</div></div></div>
+  const rating=e.data.rating||e.rating;
+  if(e.kind==="finished"||e.kind==="rated")return `<article class="ev">
+    ${e.cover_url?`<div class="evbg" style="background-image:url('${esc(e.cover_url)}')"></div>`:""}
+    ${evHead(e,e.kind==="finished"?"finished a book":"rated a book")}
+    <div class="evhero" data-fb="${i}">${coverHTML(e)}
+      <div style="min-width:0"><span class="tag ${e.kind==="finished"?"done":""}">${e.kind==="finished"?"Finished":"Rated"}</span>
+        <div class="t">${esc(e.title)}</div><div class="a">${esc(e.author)}</div>
+        ${rating?`<div class="bigstars" aria-label="${rating} out of 5 stars">${stars(rating)}</div>`:""}</div></div>
     ${e.review?`<p class="rev">${esc(e.review)}</p>`:""}
-    <div class="foot"><button class="heart ${e.liked?"on":""}" data-like="${i}" aria-label="Like">${HEART}<span>${e.likes||""}</span></button><div class="f1" style="flex:1"></div>
-      ${e.mine||e.my_entry?"":`<button class="sm" data-fwant="${i}">+ Want to read</button>`}</div>
+    ${evActions(e,i)}</article>`;
+  if(e.kind==="reviewed")return `<article class="ev">${evHead(e,"wrote a review")}
+    <div class="pullq"><p>${esc(e.review||"")}</p></div>
+    <div class="bkrow" data-fb="${i}">${coverHTML(e)}<div style="min-width:0"><div class="t">${esc(e.title)}</div><div class="a">${esc(e.author)}</div>
+      ${e.rating?`<div class="stars">${stars(e.rating)}</div>`:""}</div></div>
+    ${evActions(e,i)}</article>`;
+  if(e.kind==="highlight")return `<article class="ev">${evHead(e,"highlighted a passage")}
+    <figure class="qcard" style="--qc:${HL_HEX[e.quote_color]||HL_HEX.yellow}" data-fb="${i}">
+      <blockquote>${esc(e.quote)}</blockquote><figcaption>from <i>${esc(e.title)}</i> · ${esc(e.author)}</figcaption></figure>
+    ${e.quote_note?`<p class="qnote">${who(e)}: ${esc(e.quote_note)}</p>`:""}
+    ${evActions(e,i)}</article>`;
+  if(e.kind==="buddy")return `<article class="ev">${evHead(e,`is reading with ${esc((e.data.with||[]).join(", "))}`)}
+    <div class="bkrow" data-fb="${i}">${coverHTML(e)}<div style="min-width:0"><span class="tag">Buddy read</span><div class="t">${esc(e.title)}</div><div class="a">${esc(e.author)}</div></div></div>
+    ${evActions(e,i)}</article>`;
+  // started reading (and anything new): one slim line
+  return `<article class="ev slim"><div class="slimrow" data-fb="${i}">${coverHTML(e)}
+    <div class="txt">${who(e)} <span class="muted">started</span> <i>${esc(e.title)}</i><time>${ago(e.created_at)}</time></div>
+    <button class="heart ${e.liked?"on":""}" data-like="${i}" aria-label="Like">${HEART}<span>${e.likes||""}</span></button></div></article>`;
+}
+function wantHTML(idx){
+  const e=F.events[idx[0]],n=idx.length;
+  return `<article class="ev">${evHead(e,n>1?`wants to read ${n} books`:"wants to read")}
+    ${n>1?`<div class="minishelf">${idx.map(i=>{const b=F.events[i];return `<div class="book" data-fb="${i}">${coverHTML(b)}<div class="t">${esc(b.title)}</div></div>`}).join("")}</div>`
+      :`<div class="bkrow" data-fb="${idx[0]}">${coverHTML(e)}<div style="min-width:0"><div class="t">${esc(e.title)}</div><div class="a">${esc(e.author)}</div></div></div>${evActions(e,idx[0])}`}
   </article>`;
 }
 $("#friendsView").addEventListener("click",async e=>{
@@ -1918,10 +2036,16 @@ $("#friendsView").addEventListener("click",async e=>{
   if(rq){await api("/me/requests/"+rq.dataset.u,{method:rq.dataset.req==="ok"?"POST":"DELETE"}).catch(()=>{});loadFriends();return}
   const lk=e.target.closest("[data-like]");
   if(lk){const ev=F.events[+lk.dataset.like],on=!ev.liked;ev.liked=on;ev.likes+=on?1:-1;lk.classList.toggle("on",on);lk.querySelector("span").textContent=ev.likes||"";
+    lk.classList.remove("pop");if(on){void lk.offsetWidth;lk.classList.add("pop");navigator.vibrate?.(8)}
     api(`/events/${ev.id}/like`,{method:on?"PUT":"DELETE"}).catch(()=>{});return}
+  const er=e.target.closest("[data-evread]");
+  if(er){const ev=F.events[+er.dataset.evread];er.disabled=true;
+    try{const it=await api("/library",{method:"POST",body:{book_id:ev.book_id,status:"reading"}});ev.my_entry=it.entry_id;openReader(it)}
+    catch(err){er.disabled=false;toast(errMsg(err))}return}
   const fw=e.target.closest("[data-fwant]");
   if(fw){const ev=F.events[+fw.dataset.fwant];fw.disabled=true;
-    try{const it=await api("/library",{method:"POST",body:{book_id:ev.book_id,status:"want"}});ev.my_entry=it.entry_id;fw.textContent="✓ On your shelf";toast("Saved to Want to read");load()}
+    try{const it=await api("/library",{method:"POST",body:{book_id:ev.book_id,status:"want"}});ev.my_entry=it.entry_id;
+      const bar=fw.parentElement;bar.querySelector("[data-evread]")?.remove();fw.outerHTML=`<span class="mine">✓ On your shelf</span>`;toast("Saved to Want to read");load()}
     catch(err){fw.disabled=false;toast(errMsg(err))}return}
   if(e.target.closest("[data-user]"))return;
   const fb=e.target.closest("[data-fb]");if(fb){const ev=F.events[+fb.dataset.fb];openFriendBook(ev,ev.mine?null:ev.display_name);return}

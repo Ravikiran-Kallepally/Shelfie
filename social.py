@@ -275,7 +275,7 @@ def feed(before: int = 0, me: dict = Depends(current_user)):
             "SELECT ev.id, ev.kind, ev.data, ev.created_at, ev.user_id, ev.annotation_id,"
             " u.username, u.display_name, u.is_private, e.visibility, e.rating, e.review, e.id AS entry_id,"
             " b.id AS book_id, b.title, b.author, b.cover_url, b.gutenberg_id,"
-            " a.text AS quote, a.note AS quote_note, a.shared AS quote_shared,"
+            " a.text AS quote, a.note AS quote_note, a.color AS quote_color, a.shared AS quote_shared,"
             " (SELECT count(*) FROM likes l WHERE l.event_id=ev.id) AS likes,"
             " EXISTS(SELECT 1 FROM likes l WHERE l.event_id=ev.id AND l.user_id=:me) AS liked,"
             " (SELECT e2.id FROM entries e2 WHERE e2.book_id=b.id AND e2.user_id=:me) AS my_entry"
