@@ -24,7 +24,7 @@ from pydantic import BaseModel, Field
 import auth
 import reads
 import social
-from auth import current_user
+from auth import current_user, optional_user
 from store import BASE, DATA, ITEM_SQL, STATUSES, VISIBILITY, db, migrate, now, row_to_item
 
 CACHE = DATA / "cache"
@@ -927,6 +927,8 @@ def patch_annotation(aid: str, p: AnnotationPatch, me: dict = Depends(current_us
         a = my_annotation(conn, me["id"], aid)
         if "shared" in data:
             data["shared"] = int(data["shared"])
+            if data["shared"] and me.get("is_guest"):
+                raise HTTPException(403, "Create an account to share highlights with friends.")
             entry = conn.execute("SELECT id FROM entries WHERE book_id=? AND user_id=?", (a["book_id"], me["id"])).fetchone()
             if data["shared"] and not a["shared"]:
                 if not entry:
@@ -964,12 +966,31 @@ def favicon():
     return FileResponse(BASE / "static" / "icon.svg", media_type="image/svg+xml")
 
 
+APK = DATA / "downloads" / "Shelfie.apk"
+
+
+@app.get("/api/site", include_in_schema=False)
+def site_info():
+    """What the public website can offer right now."""
+    return {"apk": APK.exists(), "apk_mb": round(APK.stat().st_size / 1e6, 1) if APK.exists() else None}
+
+
+@app.get("/download/android", include_in_schema=False)
+def download_android():
+    if not APK.exists():
+        raise HTTPException(404, "The Android app isn't available for download yet.")
+    return FileResponse(APK, media_type="application/vnd.android.package-archive", filename="Shelfie.apk")
+
+
 @app.get("/{path:path}", include_in_schema=False)
-def spa(path: str):
-    """The app's own pages (/, /discover, /friends, /@name, /join/code) all load index.html;
-    /@name also gets link-preview tags so a shared profile shows a card."""
+def spa(path: str, request: Request):
+    """/ is the public website for visitors; everyone signed in (and the Android app, which
+    identifies itself) gets the app. The app's own pages (/app, /discover, /friends, /@name,
+    /join/code) always load index.html; /@name also gets link-preview tags."""
     if path.startswith(("api/", "static/")):
         raise HTTPException(404)
+    if path == "" and "ShelfieApp" not in request.headers.get("user-agent", "") and not optional_user(request):
+        return HTMLResponse((BASE / "static" / "site.html").read_text(encoding="utf-8"), headers={"Cache-Control": "no-cache"})
     page = (BASE / "static" / "index.html").read_text(encoding="utf-8")
     if path.startswith("@"):
         meta = social.profile_meta(path[1:].split("/")[0].lower())

@@ -71,8 +71,16 @@ def current_user(user: Optional[dict] = Depends(optional_user)) -> dict:
     return user
 
 
+def member(user: dict = Depends(current_user)) -> dict:
+    """Social features (friends, feed, buddy reads, invites) need a real account, not a guest."""
+    if user.get("is_guest"):
+        raise HTTPException(403, "Create an account to read with friends.")
+    return user
+
+
 def me_json(u: dict) -> dict:
-    return {**{k: u[k] for k in PUBLIC_USER}, "is_admin": bool(u["is_admin"]), "goal": u.get("goal") or 0}
+    return {**{k: u[k] for k in PUBLIC_USER}, "is_admin": bool(u["is_admin"]), "goal": u.get("goal") or 0,
+            "is_guest": bool(u.get("is_guest"))}
 
 
 # a few tries a minute per address+name stops password guessing without bothering people
@@ -86,6 +94,13 @@ def throttle(key: str, limit: int = 8, window: int = 300):
         raise HTTPException(429, "Too many attempts. Try again in a few minutes.")
     recent.append(t)
     _attempts[key] = recent
+
+
+def check_username(name: str) -> str:
+    username = name.strip().lower().lstrip("@")
+    if not USERNAME_RE.match(username) or username in RESERVED or username.startswith("guest_"):
+        raise HTTPException(400, "Usernames are 3–20 letters, numbers or underscores.")
+    return username
 
 
 class SignupIn(BaseModel):
@@ -120,7 +135,7 @@ class PasswordIn(BaseModel):
 @router.get("/api/auth/state")
 def auth_state(user: Optional[dict] = Depends(optional_user)):
     with closing(db()) as conn:
-        setup = conn.execute("SELECT count(*) FROM users").fetchone()[0] == 0
+        setup = conn.execute("SELECT count(*) FROM users WHERE is_guest=0").fetchone()[0] == 0
     return {"setup": setup, "user": me_json(user) if user else None}
 
 
@@ -139,11 +154,9 @@ def invite_info(code: str):
 @router.post("/api/auth/signup")
 def signup(body: SignupIn, request: Request, response: Response):
     throttle("signup:" + (request.client.host if request.client else ""), limit=10, window=3600)
-    username = body.username.strip().lower()
-    if not USERNAME_RE.match(username) or username in RESERVED:
-        raise HTTPException(400, "Usernames are 3–20 letters, numbers or underscores.")
+    username = check_username(body.username)
     with closing(db()) as conn:
-        first = conn.execute("SELECT count(*) FROM users").fetchone()[0] == 0
+        first = conn.execute("SELECT count(*) FROM users WHERE is_guest=0").fetchone()[0] == 0
         invite = None
         if not first:
             invite = conn.execute("SELECT * FROM invites WHERE code=? AND used_by IS NULL",
@@ -188,7 +201,12 @@ def logout(request: Request, response: Response):
     token = request.cookies.get(COOKIE)
     if token:
         with closing(db()) as conn:
+            user = conn.execute("SELECT u.* FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=?",
+                                (_token_hash(token),)).fetchone()
             conn.execute("DELETE FROM sessions WHERE token_hash=?", (_token_hash(token),))
+            if user and user["is_guest"]:
+                # a guest has no password, so signing out is goodbye: don't leave their data orphaned
+                conn.execute("DELETE FROM users WHERE id=?", (user["id"],))
             conn.commit()
     response.delete_cookie(COOKIE, path="/")
     return {"ok": True}
@@ -232,7 +250,7 @@ def change_password(p: PasswordIn, request: Request, me: dict = Depends(current_
 
 
 @router.post("/api/invites")
-def create_invite(me: dict = Depends(current_user)):
+def create_invite(me: dict = Depends(member)):
     with closing(db()) as conn:
         unused = conn.execute("SELECT count(*) FROM invites WHERE created_by=? AND used_by IS NULL",
                               (me["id"],)).fetchone()[0]
@@ -245,7 +263,7 @@ def create_invite(me: dict = Depends(current_user)):
 
 
 @router.get("/api/invites")
-def my_invites(me: dict = Depends(current_user)):
+def my_invites(me: dict = Depends(member)):
     with closing(db()) as conn:
         rows = conn.execute(
             "SELECT i.code, i.created_at, i.used_at, u.username AS used_by FROM invites i"
@@ -301,3 +319,120 @@ def reset_password(body: ResetIn, request: Request, response: Response):
         conn.commit()
     start_session(request, response, u["id"])
     return me_json(u)
+
+
+# ---------- guests: try Shelfie without an invite ----------
+@router.post("/api/auth/guest")
+def guest(request: Request, response: Response):
+    """A private, personal-only account with no password. Reading, shelves, highlights and
+    stats work; friends and the feed wait until they join with an invite."""
+    throttle("guest:" + (request.client.host if request.client else ""), limit=20, window=3600)
+    with closing(db()) as conn:
+        for _ in range(5):
+            name = "guest_" + secrets.token_hex(4)
+            if not conn.execute("SELECT 1 FROM users WHERE username=?", (name,)).fetchone():
+                break
+        uid = conn.execute(
+            "INSERT INTO users(username,display_name,password_hash,is_private,is_guest,created_at) VALUES(?,?,?,1,1,?)",
+            # an unguessable hash nobody knows the password for: guests can't sign in from elsewhere
+            (name, "Guest", hash_password(secrets.token_urlsafe(32)), now())).lastrowid
+        conn.commit()
+        user = dict(conn.execute("SELECT * FROM users WHERE id=?", (uid,)).fetchone())
+    start_session(request, response, uid)
+    return me_json(user)
+
+
+class UpgradeIn(BaseModel):
+    username: str
+    password: str = Field(min_length=8, max_length=200)
+    display_name: str = Field(default="", max_length=60)
+    invite: str = ""
+
+
+@router.post("/api/auth/upgrade")
+def upgrade(body: UpgradeIn, request: Request, me: dict = Depends(current_user)):
+    """Turn a guest into a full account. Everything they read, shelved and highlighted stays."""
+    if not me.get("is_guest"):
+        raise HTTPException(400, "You already have an account.")
+    throttle("upgrade:" + (request.client.host if request.client else ""), limit=10, window=3600)
+    username = check_username(body.username)
+    with closing(db()) as conn:
+        first = conn.execute("SELECT count(*) FROM users WHERE is_guest=0").fetchone()[0] == 0
+        invite = None
+        if not first:
+            invite = conn.execute("SELECT * FROM invites WHERE code=? AND used_by IS NULL", (body.invite.strip(),)).fetchone()
+            if not invite:
+                raise HTTPException(403, "You need an invite link to join. Request one, or ask a friend.")
+        if conn.execute("SELECT 1 FROM users WHERE username=? AND id<>?", (username, me["id"])).fetchone():
+            raise HTTPException(409, "That username is taken.")
+        conn.execute("UPDATE users SET username=?, display_name=?, password_hash=?, is_guest=0, is_private=0, is_admin=?"
+                     " WHERE id=?", (username, body.display_name.strip() or username, hash_password(body.password),
+                                     int(first), me["id"]))
+        if first:
+            for table in ("entries", "lists", "annotations"):
+                conn.execute(f"UPDATE {table} SET user_id=? WHERE user_id IS NULL", (me["id"],))
+        else:
+            conn.execute("UPDATE invites SET used_by=?, used_at=? WHERE code=?", (me["id"], now(), invite["code"]))
+            for a, b in ((me["id"], invite["created_by"]), (invite["created_by"], me["id"])):
+                conn.execute("INSERT OR IGNORE INTO follows VALUES(?,?, 'accepted', ?)", (a, b, now()))
+        conn.commit()
+        return me_json(dict(conn.execute("SELECT * FROM users WHERE id=?", (me["id"],)).fetchone()))
+
+
+# ---------- invite requests from the website ----------
+EMAIL_RE = re.compile(r"^[^@\s]{1,64}@[^@\s]{1,190}\.[^@\s]{2,}$")
+
+
+class WaitlistIn(BaseModel):
+    email: str = Field(max_length=254)
+    note: str = Field(default="", max_length=300)
+
+
+@router.post("/api/waitlist")
+def join_waitlist(body: WaitlistIn, request: Request):
+    throttle("waitlist:" + (request.client.host if request.client else ""), limit=5, window=3600)
+    email = body.email.strip()
+    if not EMAIL_RE.match(email):
+        raise HTTPException(400, "That doesn't look like an email address.")
+    with closing(db()) as conn:
+        conn.execute("INSERT INTO waitlist(email,note,created_at) VALUES(?,?,?) ON CONFLICT(email) DO NOTHING",
+                     (email, body.note.strip(), now()))
+        conn.commit()
+    # same answer whether or not they asked before, so the list can't be probed
+    return {"ok": True}
+
+
+def admin(user: dict = Depends(member)) -> dict:
+    if not user["is_admin"]:
+        raise HTTPException(403, "Only the Shelfie owner can do that.")
+    return user
+
+
+@router.get("/api/waitlist")
+def waitlist(me: dict = Depends(admin)):
+    with closing(db()) as conn:
+        return [dict(r) for r in conn.execute("SELECT * FROM waitlist ORDER BY invite_code IS NOT NULL, created_at DESC")]
+
+
+@router.post("/api/waitlist/{wid}/invite")
+def invite_from_waitlist(wid: int, me: dict = Depends(admin)):
+    """Make an invite link for someone on the list; you send it to them yourself."""
+    with closing(db()) as conn:
+        row = conn.execute("SELECT * FROM waitlist WHERE id=?", (wid,)).fetchone()
+        if not row:
+            raise HTTPException(404)
+        code = row["invite_code"]
+        if not code:
+            code = secrets.token_urlsafe(9)
+            conn.execute("INSERT INTO invites(code,created_by,created_at) VALUES(?,?,?)", (code, me["id"], now()))
+            conn.execute("UPDATE waitlist SET invite_code=? WHERE id=?", (code, wid))
+            conn.commit()
+    return {"code": code, "email": row["email"]}
+
+
+@router.delete("/api/waitlist/{wid}")
+def remove_from_waitlist(wid: int, me: dict = Depends(admin)):
+    with closing(db()) as conn:
+        conn.execute("DELETE FROM waitlist WHERE id=?", (wid,))
+        conn.commit()
+    return {"ok": True}

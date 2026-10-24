@@ -17,3 +17,5 @@ mobile/dist/
 *.jks
 *.keystore
 keystore.properties
+# the Android app offered on the website (built separately)
+downloads/

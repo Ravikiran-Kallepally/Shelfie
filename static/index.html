@@ -351,6 +351,20 @@ details.tbl td:last-child{text-align:right}
 .cmt .del{margin-left:auto;border:none;background:none;color:var(--muted);font-size:12px;padding:2px 6px}
 .ahead{margin:12px 0;padding:10px 12px;border-radius:12px;background:var(--card);font-size:13px;color:var(--muted)}
 ::highlight(hl-friend){text-decoration:underline 2px;text-decoration-color:#4dabf7;text-underline-offset:3px}
+/* guests: everything personal, nothing social */
+body.guest .bell,body.guest #composer,body.guest #feed,body.guest #feedMore,body.guest [data-act=invite],body.guest [data-act=people],body.guest #budStart,
+body.guest #annShare,body.guest label:has(#annShare),body.guest .fside .row button{display:none!important}
+.guestbox{max-width:560px;margin:0 auto}
+.guestbox h2{font:600 24px/1.25 var(--serif);margin:18px 0 6px}
+.guestbox .lead{color:var(--muted);margin:0 0 18px;font-size:15px}
+.gcard{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:18px;margin-bottom:14px}
+.gcard h3{margin:0 0 4px;font:600 18px/1.3 var(--serif)}
+.gcard .err{color:#c0392b;font-size:14px;min-height:18px;margin-top:6px}
+.authbox .guestbtn{width:100%;margin-top:10px;padding:13px;font-size:16px;background:transparent}
+.authbox .or{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:13px;margin:18px 0 4px}
+.authbox .or::before,.authbox .or::after{content:"";flex:1;height:1px;background:var(--line)}
+.wl{display:flex;gap:8px;margin-top:8px}
+.wl input{flex:1;min-width:0}
 /* visitors without an account can only look at public profiles */
 body.anon .tabbar,body.anon .toptabs,body.anon .appbar .iconbtn,body.anon .appbar .wideonly{display:none!important}
 body.anon{padding-bottom:24px}
@@ -521,7 +535,7 @@ body.anon{padding-bottom:24px}
 #authView{position:fixed;inset:0;z-index:60;background:var(--bg);overflow:auto;display:flex;align-items:center;justify-content:center;padding:calc(24px + var(--sat)) 20px calc(24px + var(--sab))}
 .authbox{width:100%;max-width:380px}
 .authbox .logo{font-size:44px;text-align:center;margin-bottom:6px}
-.authbox .tag{text-align:center;color:var(--muted);margin:0 0 26px}
+.authbox .authtag{text-align:center;color:var(--muted);margin:0 0 26px}
 .authbox .field{margin:12px 0}
 .authbox button.primary{width:100%;padding:13px;font-size:16px;margin-top:8px}
 .authbox .err{color:#c0392b;font-size:14px;min-height:20px;margin-top:8px}
@@ -584,6 +598,7 @@ body.anon{padding-bottom:24px}
       <div id="buddyWrap"></div>
     </div>
     <div class="fmain">
+      <div id="guestFr"></div>
       <div class="composer" data-act="compose" id="composer"></div>
       <div id="feed"></div>
       <div id="feedMore"></div>
@@ -665,6 +680,7 @@ body.anon{padding-bottom:24px}
   <label class="switch"><div>Private account<small>Only people you approve can see your shelves and activity.</small></div><input type="checkbox" id="setPrivate"></label>
   <div class="field"><label>Invites</label><div id="inviteList" class="muted" style="font-size:14px"></div>
     <button class="sm" data-act="invite" style="margin-top:8px">+ New invite link</button></div>
+  <div class="field" id="wlAdmin" hidden><label>Invite requests from the website</label><div id="wlList" class="muted" style="font-size:14px"></div></div>
   <details class="field"><summary class="muted" style="cursor:pointer;padding:6px 0">Change password</summary>
     <div class="field"><input type="password" id="pwOld" placeholder="Current password" autocomplete="current-password"></div>
     <div class="field"><input type="password" id="pwNew" placeholder="New password (8+ characters)" autocomplete="new-password"></div>
@@ -932,7 +948,7 @@ function setView(v,tab=v){
   $$("[data-tab]").forEach(b=>b.classList.toggle("on",b.dataset.tab===tab));
   scrollTo({top:0});
   if(v==="discover"&&!D.loaded)discover(true);
-  if(v==="friends")loadFriends();
+  if(v==="friends")S.me?.is_guest?guestFriends():loadFriends();
   if(v==="library"&&S.me)load(); // books may have been added from Discover, a friend's shelf or the feed
 }
 /* pages have real addresses so links can be shared and the back button works */
@@ -942,6 +958,7 @@ function route(){
   const p=location.pathname;
   if(p.startsWith("/@"))return showProfile(decodeURIComponent(p.slice(2)).toLowerCase());
   if(!S.me)return showAuth("login");
+  if(S.me?.is_guest&&p==="/friends")return setView("friends");
   if(p==="/discover")return setView("discover");
   if(p==="/friends")return setView("friends");
   setView("library");
@@ -978,7 +995,7 @@ async function action(a){
   if(a==="exporthl"){$("#menuDlg").close();if(CAP)return shareExport("/api/export/highlights.md","Shelfie highlights");location.href="/api/export/highlights.md";return}
   if(a==="people"){openPeople("search");return}
   if(a==="invite"){shareInvite();return}
-  if(a==="settings"){openSettings();return}
+  if(a==="settings"){S.me?.is_guest?nav("/@"+S.me.username):openSettings();return}
   if(a==="share"){shareProfile();return}
   if(a==="signin"){showAuth("login");return}
   if(a==="add"){$("#sres").innerHTML="";$("#sq").value="";sQ="";sheet($("#addDlg"));setTimeout(()=>$("#sq").focus(),300);return}
@@ -1950,7 +1967,7 @@ async function showAuth(mode){
   if(mode==="join"){code=decodeURIComponent(location.pathname.split("/")[2]||"");try{invite=await api("/invites/"+encodeURIComponent(code))}catch{invite=false}}
   const signup=mode!=="login";
   box.innerHTML=`<h1 class="logo">Shelf<span>ie</span></h1>
-    <p class="tag">${mode==="setup"?"Create your account. Your books come with you.":signup?"Track what you read, read free classics, see what friends are reading.":"Welcome back."}</p>
+    <p class="authtag">${mode==="setup"?"Create your account. Your books come with you.":signup?"Track what you read, read free classics, see what friends are reading.":"Welcome back."}</p>
     ${mode==="join"?invite?`<div class="invitedby">${avatar(invite)}<div><b>${esc(invite.display_name)}</b> invited you to Shelfie</div></div>`:
       `<div class="invitedby">This invite link isn't valid or was already used. Ask your friend for a new one.</div>`:""}
     <form id="authForm">
@@ -1960,8 +1977,19 @@ async function showAuth(mode){
       <button class="primary">${mode==="setup"?"Create my account":signup?"Join Shelfie":"Sign in"}</button>
       <div class="err" id="auErr"></div>
     </form>
-    <div class="alt">${signup?`Already have an account? <a data-auth="login">Sign in</a>`:"Shelfie is invite-only. Open a friend's invite link to join."}</div>`;
+    ${mode==="setup"?"":`<div class="or">or</div>
+      <button class="guestbtn" id="auGuest">Continue as guest</button>
+      <div class="muted" style="font-size:13px;text-align:center;margin-top:6px">Read 70,000+ free classics now. No invite or password needed.</div>`}
+    <div class="alt">${signup?`Already have an account? <a data-auth="login">Sign in</a>`:
+      `Shelfie is invite-only for now. <a id="auWl">Request an invite</a>`}</div>
+    <div id="auWlBox" hidden>${waitlistForm()}</div>`;
   box.querySelector("[data-auth]")?.addEventListener("click",()=>showAuth("login"));
+  $("#auWl")?.addEventListener("click",()=>{$("#auWlBox").hidden=false;$("#auWlBox input").focus()});
+  $("#auGuest")?.addEventListener("click",async e=>{
+    e.target.disabled=true;
+    try{signedIn(await api("/auth/guest",{method:"POST"}));toast("Welcome! You're reading as a guest")}
+    catch(err){e.target.disabled=false;$("#auErr").textContent=errMsg(err)}
+  });
   $("#authForm").onsubmit=async e=>{
     e.preventDefault();const btn=e.target.querySelector("button");btn.disabled=true;$("#auErr").textContent="";
     const body={username:$("#auUser").value.trim(),password:$("#auPass").value};
@@ -1975,8 +2003,8 @@ async function showReset(token){
   $("#authView").hidden=false;const box=$("#authBox");
   let who=null;try{who=await api("/auth/reset/"+encodeURIComponent(token))}catch(e){who={err:errMsg(e)}}
   box.innerHTML=`<h1 class="logo">Shelf<span>ie</span></h1>
-    ${who.err?`<p class="tag">${esc(who.err)}</p><div class="alt"><a data-auth="login">Go to sign in</a></div>`:
-    `<p class="tag">Choose a new password for <b>@${esc(who.username)}</b>.</p>
+    ${who.err?`<p class="authtag">${esc(who.err)}</p><div class="alt"><a data-auth="login">Go to sign in</a></div>`:
+    `<p class="authtag">Choose a new password for <b>@${esc(who.username)}</b>.</p>
      <form id="authForm"><div class="field"><label>New password</label><input type="password" id="auPass" autocomplete="new-password" placeholder="8 or more characters"></div>
      <button class="primary">Save and sign in</button><div class="err" id="auErr"></div></form>`}`;
   box.querySelector("[data-auth]")?.addEventListener("click",()=>{history.replaceState({},"","/");showAuth("login")});
@@ -1987,12 +2015,17 @@ async function showReset(token){
 }
 function signedIn(u){
   S.me=u;try{localStorage.setItem("shelfie.me",JSON.stringify(u))}catch{}
-  $("#authView").hidden=true;document.body.classList.remove("anon");renderMe();
-  if(location.pathname.startsWith("/join/"))history.replaceState({},"","/");
+  $("#authView").hidden=true;document.body.classList.remove("anon");document.body.classList.toggle("guest",!!u.is_guest);if(!u.is_guest)$("#guestFr").innerHTML="";renderMe();
+  if(location.pathname.startsWith("/join/")){
+    // a guest who opens an invite link goes straight to "create my account" with it filled in
+    if(u.is_guest)S.pendingInvite=decodeURIComponent(location.pathname.split("/")[2]||"");
+    history.replaceState({},"",u.is_guest?"/@"+u.username:"/");
+  }
   flush();route();if(S.view!=="library")load(); // route() already loads the library page
   idle(()=>{renderTopics();api("/free").catch(()=>{})}); // warm Discover in the background
 }
 async function logout(){
+  if(S.me?.is_guest&&!confirm("Guests have no password, so signing out erases your guest library, highlights and stats. Sign out anyway?"))return;
   if(SYNC.q.length&&!confirm("Some changes haven't synced yet and will be lost. Sign out anyway?"))return;
   try{await api("/auth/logout",{method:"POST"})}catch{}
   // forget this account on the device; reader settings and downloaded books (public domain) can stay
@@ -2207,7 +2240,7 @@ function openFinish(it){
 const ACT={like:"liked your post about",comment:"commented on your post about",follow:"started following you",request:"wants to follow you",
   buddy:"invited you to read",joined:"joined Shelfie with your invite"};
 async function refreshBell(){
-  if(!S.me)return;
+  if(!S.me||S.me.is_guest)return;
   const r=await api("/activity/unread").catch(()=>null);if(!r)return;
   $("#bellN").hidden=!r.unread;$("#bellN").textContent=r.unread>9?"9+":r.unread;
 }
@@ -2246,6 +2279,7 @@ function openFriendBook(b,owner){
 const PR={u:null,data:null,tab:"read",items:[]};
 async function showProfile(username){
   const own=S.me&&S.me.username===username;
+  if(own&&S.me.is_guest)return guestPanel();
   setView("profile",own?"me":"");
   document.body.classList.toggle("anon",!S.me);
   const el=$("#profileView");
@@ -2353,7 +2387,7 @@ $("#peopleList").addEventListener("click",async e=>{
 function openSettings(){
   $("#setName").value=S.me.display_name;$("#setBio").value=S.me.bio||"";$("#setPrivate").checked=!!S.me.is_private;$("#setGoal").value=S.me.goal||"";
   $("#pwOld").value=$("#pwNew").value="";
-  sheet($("#settingsDlg"));renderInvites();
+  sheet($("#settingsDlg"));renderInvites();renderWaitlist();
 }
 async function renderInvites(){
   const list=await api("/invites").catch(()=>[]);
@@ -2375,6 +2409,76 @@ $("#pwSave").onclick=async()=>{
   catch(err){toast(errMsg(err))}
 };
 $("#signOut").onclick=logout;
+
+/* ================= guests =================
+   A guest has every personal feature; friends, the feed and invites wait for an account.
+   Creating one keeps everything they've read. */
+function waitlistForm(){
+  return `<form class="wl" data-wl><input type="email" required maxlength="254" placeholder="you@example.com" autocomplete="email" aria-label="Your email"><button class="primary sm">Request</button></form>
+    <div class="muted" data-wlmsg style="font-size:13px;margin-top:6px"></div>`;
+}
+document.addEventListener("submit",async e=>{
+  const f=e.target.closest("[data-wl]");if(!f)return;e.preventDefault();
+  const msg=f.nextElementSibling,btn=f.querySelector("button");btn.disabled=true;
+  try{await api("/waitlist",{method:"POST",body:{email:f.querySelector("input").value}});
+    f.hidden=true;msg.textContent="Thanks! You'll get an invite link by email when there's a spot."}
+  catch(err){msg.textContent=errMsg(err);btn.disabled=false}
+});
+const inviteCode=v=>{v=(v||"").trim();const m=v.match(/\/join\/([^/?#\s]+)/);return m?decodeURIComponent(m[1]):v};
+function guestFriends(){
+  $("#guestFr").innerHTML=`<div class="guestbox"><div class="gcard" style="margin-top:14px">
+    <h3>Reading is better with friends</h3>
+    <div class="muted" style="font-size:15px;margin-bottom:14px">Members see what friends are reading, share highlights and thoughts, and read books together with spoiler-free chat. Shelfie is invite-only while it grows.</div>
+    <button class="primary" style="width:100%" data-tab="me">I have an invite</button>
+    <div class="field" style="margin-bottom:0"><label>No invite yet?</label>${waitlistForm()}</div></div></div>`;
+  $("#frWrap").hidden=true;$("#reqs").innerHTML=$("#buddyWrap").innerHTML="";
+}
+async function guestPanel(){
+  setView("profile","me");
+  const s=S.stats||{by_status:{read:0,reading:0},streak:0};
+  $("#profileView").innerHTML=`<div class="guestbox">
+    <h2>You're reading as a guest</h2>
+    <p class="lead">Your shelves, highlights and stats are saved to this guest account. Create an account to keep them for good, sign in on any device, and read with friends.</p>
+    <div class="stats">${[[s.by_status.read,"books read"],[s.by_status.reading,"reading now"],[s.streak,"day streak"],["✓","no ads ever"]]
+      .map(([n,l])=>`<div class="stat"><b>${n}</b><span>${l}</span></div>`).join("")}</div>
+    <div class="gcard"><h3>Create your account</h3>
+      <div class="muted" style="font-size:14px">Everything you've read so far comes with you.</div>
+      <form id="upForm">
+        <div class="field"><label>Invite link</label><input type="text" id="upInvite" placeholder="Paste the link a friend sent you" autocomplete="off" value="${esc(S.pendingInvite||"")}"></div>
+        <div class="field"><label>Your name</label><input type="text" id="upName" maxlength="60" autocomplete="name"></div>
+        <div class="field"><label>Username</label><input type="text" id="upUser" autocapitalize="none" spellcheck="false" placeholder="letters, numbers and _" autocomplete="username"></div>
+        <div class="field"><label>Password</label><input type="password" id="upPass" placeholder="8 or more characters" autocomplete="new-password"></div>
+        <button class="primary" style="width:100%">Create my account</button><div class="err" id="upErr"></div>
+      </form></div>
+    <div class="gcard"><h3>No invite yet?</h3><div class="muted" style="font-size:14px">Leave your email and we'll send you one.</div>${waitlistForm()}</div>
+    <button class="ghost danger" id="guestOut" style="width:100%;margin:6px 0 24px">Sign out (erases this guest library)</button></div>`;
+  if(S.pendingInvite)$("#upName").focus();
+  $("#guestOut").onclick=logout;
+  $("#upForm").onsubmit=async e=>{
+    e.preventDefault();const btn=e.target.querySelector("button");btn.disabled=true;$("#upErr").textContent="";
+    try{
+      const u=await api("/auth/upgrade",{method:"POST",body:{invite:inviteCode($("#upInvite").value),display_name:$("#upName").value.trim(),
+        username:$("#upUser").value.trim(),password:$("#upPass").value}});
+      S.pendingInvite="";S.me=null;signedIn(u);nav("/friends");toast(`Welcome to Shelfie, ${u.display_name}!`);
+    }catch(err){$("#upErr").textContent=errMsg(err);btn.disabled=false}
+  };
+}
+
+/* the owner's list of people who asked for an invite on the website */
+async function renderWaitlist(){
+  const box=$("#wlAdmin");if(!box)return;
+  if(!S.me?.is_admin){box.hidden=true;return}
+  const list=await api("/waitlist").catch(()=>[]);box.hidden=false;
+  $("#wlList").innerHTML=list.length?list.map(w=>`<div class="invite"><code style="color:var(--ink)">${esc(w.email)}${w.note?` · <span class="muted">${esc(w.note)}</span>`:""}</code>
+    ${w.invite_code?`<button class="sm" data-wlcopy="${esc(w.invite_code)}">Copy link</button>`:`<button class="sm primary" data-wlinv="${w.id}">Make invite</button>`}
+    <button class="sm ghost" data-wldel="${w.id}" aria-label="Remove">✕</button></div>`).join(""):"No requests yet.";
+}
+document.addEventListener("click",async e=>{
+  const inv=e.target.closest("[data-wlinv]"),cp=e.target.closest("[data-wlcopy]"),del=e.target.closest("[data-wldel]");
+  if(inv){try{const r=await api(`/waitlist/${inv.dataset.wlinv}/invite`,{method:"POST"});copyText(location.origin+"/join/"+r.code,`Invite link for ${r.email} copied. Email it to them`);renderWaitlist()}catch(err){toast(errMsg(err))}}
+  if(cp)copyText(location.origin+"/join/"+cp.dataset.wlcopy,"Invite link copied");
+  if(del){await api(`/waitlist/${del.dataset.wldel}`,{method:"DELETE"}).catch(()=>{});renderWaitlist()}
+});
 
 /* ================= inside the Android app =================
    The APK (mobile/) is a Capacitor shell that loads this page from the server; these hooks

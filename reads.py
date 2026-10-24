@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 import social
-from auth import current_user
+from auth import member
 from store import db, now
 
 router = APIRouter()
@@ -72,7 +72,7 @@ def read_json(conn, rid: int, uid: int) -> dict:
 
 
 @router.get("/api/me/friends")
-def my_friends(me: dict = Depends(current_user)):
+def my_friends(me: dict = Depends(member)):
     """People you follow who follow you back: who you can invite to a buddy read."""
     with closing(db()) as conn:
         rows = conn.execute(
@@ -84,7 +84,7 @@ def my_friends(me: dict = Depends(current_user)):
 
 
 @router.post("/api/reads")
-def create_read(body: ReadIn, me: dict = Depends(current_user)):
+def create_read(body: ReadIn, me: dict = Depends(member)):
     with closing(db()) as conn:
         if not conn.execute("SELECT 1 FROM books WHERE id=?", (body.book_id,)).fetchone():
             raise HTTPException(404, "book not found")
@@ -114,7 +114,7 @@ def create_read(body: ReadIn, me: dict = Depends(current_user)):
 
 
 @router.get("/api/reads")
-def my_reads(me: dict = Depends(current_user)):
+def my_reads(me: dict = Depends(member)):
     with closing(db()) as conn:
         ids = [r["read_id"] for r in conn.execute(
             "SELECT m.read_id FROM read_members m JOIN reads r ON r.id=m.read_id WHERE m.user_id=?"
@@ -123,7 +123,7 @@ def my_reads(me: dict = Depends(current_user)):
 
 
 @router.get("/api/reads/book/{book_id}")
-def read_for_book(book_id: int, me: dict = Depends(current_user)):
+def read_for_book(book_id: int, me: dict = Depends(member)):
     with closing(db()) as conn:
         row = conn.execute("SELECT r.id FROM reads r JOIN read_members m ON m.read_id=r.id"
                            " WHERE r.book_id=? AND m.user_id=? AND m.status='joined' ORDER BY r.id DESC LIMIT 1",
@@ -132,7 +132,7 @@ def read_for_book(book_id: int, me: dict = Depends(current_user)):
 
 
 @router.post("/api/reads/{rid}/join")
-def join_read(rid: int, me: dict = Depends(current_user)):
+def join_read(rid: int, me: dict = Depends(member)):
     with closing(db()) as conn:
         r = membership(conn, rid, me["id"], joined=False)
         conn.execute("UPDATE read_members SET status='joined' WHERE read_id=? AND user_id=?", (rid, me["id"]))
@@ -142,7 +142,7 @@ def join_read(rid: int, me: dict = Depends(current_user)):
 
 
 @router.post("/api/reads/{rid}/leave")
-def leave_read(rid: int, me: dict = Depends(current_user)):
+def leave_read(rid: int, me: dict = Depends(member)):
     with closing(db()) as conn:
         membership(conn, rid, me["id"], joined=False)
         conn.execute("UPDATE read_members SET status='left' WHERE read_id=? AND user_id=?", (rid, me["id"]))
@@ -151,7 +151,7 @@ def leave_read(rid: int, me: dict = Depends(current_user)):
 
 
 @router.get("/api/reads/{rid}/discussion")
-def discussion(rid: int, me: dict = Depends(current_user)):
+def discussion(rid: int, me: dict = Depends(member)):
     """Comments and friends' shared highlights, only up to where you are in the book."""
     with closing(db()) as conn:
         r = membership(conn, rid, me["id"])
@@ -173,7 +173,7 @@ def discussion(rid: int, me: dict = Depends(current_user)):
 
 
 @router.post("/api/reads/{rid}/comments")
-def add_comment(rid: int, body: CommentIn, me: dict = Depends(current_user)):
+def add_comment(rid: int, body: CommentIn, me: dict = Depends(member)):
     with closing(db()) as conn:
         membership(conn, rid, me["id"])
         cid = conn.execute("INSERT INTO read_comments(read_id,user_id,pos,chapter,text,created_at) VALUES(?,?,?,?,?,?)",
@@ -184,7 +184,7 @@ def add_comment(rid: int, body: CommentIn, me: dict = Depends(current_user)):
 
 
 @router.delete("/api/reads/{rid}/comments/{cid}")
-def delete_comment(rid: int, cid: int, me: dict = Depends(current_user)):
+def delete_comment(rid: int, cid: int, me: dict = Depends(member)):
     with closing(db()) as conn:
         conn.execute("DELETE FROM read_comments WHERE id=? AND read_id=? AND user_id=?", (cid, rid, me["id"]))
         conn.commit()

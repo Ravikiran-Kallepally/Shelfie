@@ -15,7 +15,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
-from auth import PUBLIC_USER, current_user, optional_user
+from auth import PUBLIC_USER, current_user, member, optional_user
 from store import ITEM_SQL, db, now, row_to_item
 
 router = APIRouter()
@@ -43,7 +43,7 @@ def visible_to(conn, viewer: Optional[dict], owner: dict) -> tuple:
 
 
 def user_by_name(conn, username: str) -> dict:
-    row = conn.execute("SELECT * FROM users WHERE username=?", (username.lstrip("@"),)).fetchone()
+    row = conn.execute("SELECT * FROM users WHERE username=? AND is_guest=0", (username.lstrip("@"),)).fetchone()
     if not row:
         raise HTTPException(404, "No one here by that name.")
     return dict(row)
@@ -113,17 +113,17 @@ def profile_items(conn, owner: dict, vis: tuple, where: str = "", args: tuple = 
 
 
 @router.get("/api/users")
-def search_people(q: str = "", me: dict = Depends(current_user)):
+def search_people(q: str = "", me: dict = Depends(member)):
     with closing(db()) as conn:
         if q.strip():
             rows = conn.execute(
-                "SELECT * FROM users WHERE (username LIKE ? OR display_name LIKE ?) AND id<>? ORDER BY username LIMIT 20",
+                "SELECT * FROM users WHERE (username LIKE ? OR display_name LIKE ?) AND id<>? AND is_guest=0 ORDER BY username LIMIT 20",
                 (f"%{q.strip().lstrip('@')}%", f"%{q.strip()}%", me["id"])).fetchall()
         else:  # people your friends follow, then everyone else
             rows = conn.execute(
                 "SELECT u.*, (SELECT count(*) FROM follows f JOIN follows mine ON mine.followee_id = f.follower_id"
                 " AND mine.follower_id=? AND mine.status='accepted' WHERE f.followee_id=u.id AND f.status='accepted') AS mutual"
-                " FROM users u WHERE u.id<>? ORDER BY mutual DESC, u.created_at DESC LIMIT 20",
+                " FROM users u WHERE u.id<>? AND u.is_guest=0 ORDER BY mutual DESC, u.created_at DESC LIMIT 20",
                 (me["id"], me["id"])).fetchall()
         return [public_user(dict(r)) | {"following": follow_status(conn, me["id"], r["id"])} for r in rows]
 
@@ -223,7 +223,7 @@ def following(username: str, viewer: Optional[dict] = Depends(optional_user)):
 
 
 @router.post("/api/users/{username}/follow")
-def follow(username: str, me: dict = Depends(current_user)):
+def follow(username: str, me: dict = Depends(member)):
     with closing(db()) as conn:
         owner = user_by_name(conn, username)
         if owner["id"] == me["id"]:
@@ -236,7 +236,7 @@ def follow(username: str, me: dict = Depends(current_user)):
 
 
 @router.delete("/api/users/{username}/follow")
-def unfollow(username: str, me: dict = Depends(current_user)):
+def unfollow(username: str, me: dict = Depends(member)):
     with closing(db()) as conn:
         owner = user_by_name(conn, username)
         conn.execute("DELETE FROM follows WHERE follower_id=? AND followee_id=?", (me["id"], owner["id"]))
@@ -245,7 +245,7 @@ def unfollow(username: str, me: dict = Depends(current_user)):
 
 
 @router.get("/api/me/requests")
-def follow_requests(me: dict = Depends(current_user)):
+def follow_requests(me: dict = Depends(member)):
     with closing(db()) as conn:
         rows = conn.execute("SELECT u.* FROM follows f JOIN users u ON u.id=f.follower_id"
                             " WHERE f.followee_id=? AND f.status='pending' ORDER BY f.created_at", (me["id"],)).fetchall()
@@ -253,7 +253,7 @@ def follow_requests(me: dict = Depends(current_user)):
 
 
 @router.post("/api/me/requests/{username}")
-def accept_request(username: str, me: dict = Depends(current_user)):
+def accept_request(username: str, me: dict = Depends(member)):
     with closing(db()) as conn:
         other = user_by_name(conn, username)
         conn.execute("UPDATE follows SET status='accepted' WHERE follower_id=? AND followee_id=?", (other["id"], me["id"]))
@@ -262,7 +262,7 @@ def accept_request(username: str, me: dict = Depends(current_user)):
 
 
 @router.delete("/api/me/requests/{username}")
-def decline_request(username: str, me: dict = Depends(current_user)):
+def decline_request(username: str, me: dict = Depends(member)):
     """Also removes an existing follower."""
     with closing(db()) as conn:
         other = user_by_name(conn, username)
@@ -273,7 +273,7 @@ def decline_request(username: str, me: dict = Depends(current_user)):
 
 # ---------- feed ----------
 @router.get("/api/feed")
-def feed(before: int = 0, me: dict = Depends(current_user)):
+def feed(before: int = 0, me: dict = Depends(member)):
     with closing(db()) as conn:
         rows = conn.execute(
             "SELECT ev.id, ev.kind, ev.data, ev.created_at, ev.user_id, ev.annotation_id,"
@@ -318,7 +318,7 @@ def feed(before: int = 0, me: dict = Depends(current_user)):
 
 
 @router.get("/api/friends/reading")
-def friends_reading(me: dict = Depends(current_user)):
+def friends_reading(me: dict = Depends(member)):
     with closing(db()) as conn:
         friends = conn.execute("SELECT u.* FROM follows f JOIN users u ON u.id=f.followee_id"
                                " WHERE f.follower_id=? AND f.status='accepted'", (me["id"],)).fetchall()
@@ -340,7 +340,7 @@ def _visible_event(conn, me: dict, event_id: int) -> dict:
 
 
 @router.put("/api/events/{event_id}/like")
-def like(event_id: int, me: dict = Depends(current_user)):
+def like(event_id: int, me: dict = Depends(member)):
     with closing(db()) as conn:
         _visible_event(conn, me, event_id)
         conn.execute("INSERT OR IGNORE INTO likes(user_id,event_id,created_at) VALUES(?,?,?)", (me["id"], event_id, now()))
@@ -349,7 +349,7 @@ def like(event_id: int, me: dict = Depends(current_user)):
 
 
 @router.delete("/api/events/{event_id}/like")
-def unlike(event_id: int, me: dict = Depends(current_user)):
+def unlike(event_id: int, me: dict = Depends(member)):
     with closing(db()) as conn:
         conn.execute("DELETE FROM likes WHERE user_id=? AND event_id=?", (me["id"], event_id))
         conn.commit()
@@ -360,7 +360,7 @@ def unlike(event_id: int, me: dict = Depends(current_user)):
 def profile_meta(username: str) -> str:
     """Open Graph tags so a shared /@name link shows a card in chat apps. Public accounts only."""
     with closing(db()) as conn:
-        row = conn.execute("SELECT * FROM users WHERE username=?", (username,)).fetchone()
+        row = conn.execute("SELECT * FROM users WHERE username=? AND is_guest=0", (username,)).fetchone()
         if not row or row["is_private"]:
             return ""
         owner = dict(row)
@@ -402,7 +402,7 @@ def _my_entry(conn, me: dict, entry_id: int) -> dict:
 
 
 @router.post("/api/posts")
-def post_thought(body: PostIn, me: dict = Depends(current_user)):
+def post_thought(body: PostIn, me: dict = Depends(member)):
     """A thought about a book you're reading, optionally with a line from it."""
     text, quote = body.text.strip(), body.quote.strip()
     if not text and not quote:
@@ -438,7 +438,7 @@ def finish(entry_id: int, body: FinishIn, me: dict = Depends(current_user)):
 
 
 @router.delete("/api/events/{event_id}")
-def delete_post(event_id: int, me: dict = Depends(current_user)):
+def delete_post(event_id: int, me: dict = Depends(member)):
     with closing(db()) as conn:
         conn.execute("DELETE FROM events WHERE id=? AND user_id=?", (event_id, me["id"]))
         conn.commit()
@@ -460,14 +460,14 @@ def comment_rows(conn, event_id: int, me: dict, limit: int = 200) -> list:
 
 
 @router.get("/api/events/{event_id}/comments")
-def list_comments(event_id: int, me: dict = Depends(current_user)):
+def list_comments(event_id: int, me: dict = Depends(member)):
     with closing(db()) as conn:
         _visible_event(conn, me, event_id)
         return comment_rows(conn, event_id, me)
 
 
 @router.post("/api/events/{event_id}/comments")
-def add_comment(event_id: int, body: CommentIn, me: dict = Depends(current_user)):
+def add_comment(event_id: int, body: CommentIn, me: dict = Depends(member)):
     with closing(db()) as conn:
         _visible_event(conn, me, event_id)
         cid = conn.execute("INSERT INTO event_comments(event_id,user_id,text,created_at) VALUES(?,?,?,?)",
@@ -478,7 +478,7 @@ def add_comment(event_id: int, body: CommentIn, me: dict = Depends(current_user)
 
 
 @router.delete("/api/events/{event_id}/comments/{comment_id}")
-def delete_comment(event_id: int, comment_id: int, me: dict = Depends(current_user)):
+def delete_comment(event_id: int, comment_id: int, me: dict = Depends(member)):
     """Your own comment, or any comment on your own post."""
     with closing(db()) as conn:
         conn.execute("DELETE FROM event_comments WHERE id=? AND event_id=? AND (user_id=?"
@@ -516,7 +516,7 @@ def _activity(conn, me: dict) -> list:
 
 
 @router.get("/api/activity")
-def activity(me: dict = Depends(current_user)):
+def activity(me: dict = Depends(member)):
     with closing(db()) as conn:
         items = _activity(conn, me)
         seen = me.get("activity_seen") or ""
@@ -528,14 +528,14 @@ def activity(me: dict = Depends(current_user)):
 
 
 @router.get("/api/activity/unread")
-def activity_unread(me: dict = Depends(current_user)):
+def activity_unread(me: dict = Depends(member)):
     with closing(db()) as conn:
         seen = me.get("activity_seen") or ""
         return {"unread": sum(1 for it in _activity(conn, me) if (it["created_at"] or "") > seen)}
 
 
 @router.get("/api/people/suggested")
-def suggested(me: dict = Depends(current_user)):
+def suggested(me: dict = Depends(member)):
     """Friends of friends you don't follow yet, for a quiet feed."""
     with closing(db()) as conn:
         rows = conn.execute(

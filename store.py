@@ -13,7 +13,7 @@ DB_PATH = DATA / "shelfie.db"
 
 STATUSES = ("want", "reading", "read", "dnf")
 VISIBILITY = ("public", "friends", "private")
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 
 
 def db():
@@ -40,7 +40,16 @@ CREATE TABLE IF NOT EXISTS users (
     is_admin INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL,
     goal INTEGER NOT NULL DEFAULT 0,
-    activity_seen TEXT  -- when they last opened Activity; newer items count as unread
+    activity_seen TEXT,  -- when they last opened Activity; newer items count as unread
+    is_guest INTEGER NOT NULL DEFAULT 0  -- tried Shelfie without an invite: personal features only
+);
+-- people asking for an invite from the website
+CREATE TABLE IF NOT EXISTS waitlist (
+    id INTEGER PRIMARY KEY,
+    email TEXT NOT NULL UNIQUE COLLATE NOCASE,
+    note TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL,
+    invite_code TEXT
 );
 -- one-time links that let someone set a new password without email
 CREATE TABLE IF NOT EXISTS reset_tokens (
@@ -272,13 +281,14 @@ def migrate():
                     conn.backup(dst)
             conn.executescript(SCHEMA.split("CREATE TABLE IF NOT EXISTS books")[0])  # users..follows first
             _to_v1(conn)
-        # v2 and v3 only add columns and tables. Checked against the tables as they are now (a v0
+        # v2-v4 only add columns and tables. Checked against the tables as they are now (a v0
         # database has just been rebuilt above); ALTER first so SCHEMA's indexes find them.
         now_tables = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
         for table, col, ddl in (("users", "goal", "goal INTEGER NOT NULL DEFAULT 0"),
                                 ("annotations", "pos", "pos REAL"),
                                 ("users", "activity_seen", "activity_seen TEXT"),
-                                ("likes", "created_at", "created_at TEXT")):
+                                ("likes", "created_at", "created_at TEXT"),
+                                ("users", "is_guest", "is_guest INTEGER NOT NULL DEFAULT 0")):
             if table in now_tables and col not in _cols(conn, table):
                 conn.execute(f"ALTER TABLE {table} ADD COLUMN {ddl}")
         conn.commit()

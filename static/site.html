@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Shelfie: read classics beautifully, together</title>
+<meta name="description" content="A calm, beautiful reader for 70,000+ free classics, with your shelves, highlights, reading stats and friends. No ads, no paywalls.">
+<meta property="og:title" content="Shelfie: read classics beautifully, together">
+<meta property="og:description" content="70,000+ free classics in a calm, beautiful reader. Shelves, highlights, stats and spoiler-free buddy reads with friends.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="/static/site/feed.jpg">
+<meta name="theme-color" content="#f6f1e7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1c1814" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="/static/icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;0,7..72,700;1,7..72,400&display=swap">
+<style>
+:root{
+  --bg:#f6f1e7;--paper:#fffdf8;--ink:#2b2118;--muted:#76685a;--line:#e4dccb;--accent:#b4532a;--accent-ink:#fff;
+  --deep:#2a201a;--deep-ink:#f4ecdf;--ok:#3f7d58;
+  --serif:Literata,Georgia,"Iowan Old Style",serif;--sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --shadow:0 2px 6px rgba(43,33,24,.08),0 24px 60px rgba(43,33,24,.16);
+}
+@media (prefers-color-scheme: dark){
+  :root{--bg:#1c1814;--paper:#262019;--ink:#f1e9dc;--muted:#ab9f8f;--line:#3a3128;--accent:#e07a4a;--accent-ink:#1c1814;
+    --deep:#120f0c;--deep-ink:#f1e9dc;--shadow:0 2px 6px rgba(0,0,0,.4),0 24px 60px rgba(0,0,0,.45)}
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.6 var(--sans)}
+a{color:inherit}
+img{max-width:100%;display:block}
+.wrap{max-width:1120px;margin:0 auto;padding:0 20px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:14px;padding:14px 22px;font:600 16px/1.2 var(--sans);
+  text-decoration:none;border:1px solid var(--line);background:var(--paper);color:var(--ink);cursor:pointer;transition:transform .15s}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.small{padding:9px 16px;font-size:14px;border-radius:12px}
+.btn svg{width:20px;height:20px}
+[hidden]{display:none!important}
+
+/* nav */
+nav.top{position:sticky;top:0;z-index:10;background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+nav.top .wrap{display:flex;align-items:center;gap:10px;height:64px}
+.logo{font:700 26px/1 var(--serif);letter-spacing:-.02em;text-decoration:none;margin-right:auto}
+.logo span{color:var(--accent)}
+nav.top .signin{font-weight:600;text-decoration:none;padding:8px 10px;font-size:15px}
+
+/* hero */
+.hero{padding:30px 0 40px}
+.hero .wrap{display:grid;gap:36px;align-items:center}
+.kicker{display:inline-block;font:700 12px/1 var(--sans);letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:14px}
+h1{font:700 clamp(40px,8vw,68px)/1.04 var(--serif);letter-spacing:-.025em;margin:0 0 18px}
+h1 em{font-style:italic;font-weight:400;color:var(--accent)}
+.lede{font-size:clamp(17px,2.4vw,20px);color:var(--muted);max-width:520px;margin:0 0 26px}
+.ctas{display:flex;flex-wrap:wrap;gap:10px}
+.fine{font-size:14px;color:var(--muted);margin-top:12px}
+.phone{position:relative;width:min(300px,78vw);margin:0 auto;border-radius:44px;padding:10px;background:#16110d;box-shadow:var(--shadow)}
+.phone img{border-radius:34px;aspect-ratio:390/844;object-fit:cover;object-position:top;width:100%}
+.phone.tilt{transform:rotate(3deg)}
+.duo{position:relative;display:flex;justify-content:center}
+.duo .phone.back{position:absolute;left:0;top:40px;width:min(250px,60vw);transform:rotate(-6deg);opacity:.96;display:none}
+@media (min-width:900px){
+  .hero{padding:60px 0 70px}
+  .hero .wrap{grid-template-columns:1.05fr .95fr}
+  .duo .phone.back{display:block;left:-10px}
+  .duo .phone.front{margin-left:150px}
+}
+
+/* strip */
+.strip{border-block:1px solid var(--line);background:var(--paper)}
+.strip ul{list-style:none;margin:0;padding:16px 0;display:flex;flex-wrap:wrap;justify-content:center;gap:10px 30px;font-weight:600;font-size:15px}
+.strip li::before{content:"✦";color:var(--accent);margin-right:8px}
+
+/* features */
+section.feat{padding:70px 0}
+section.feat .wrap{display:grid;gap:40px;align-items:center}
+section.feat h2{font:700 clamp(30px,5vw,44px)/1.1 var(--serif);letter-spacing:-.02em;margin:0 0 14px}
+section.feat p{color:var(--muted);margin:0 0 14px;max-width:520px}
+section.feat ul{margin:0;padding:0;list-style:none;display:grid;gap:10px}
+section.feat li{display:flex;gap:12px;align-items:flex-start}
+section.feat li b{display:block;color:var(--ink)}
+section.feat li span{color:var(--muted);font-size:15px}
+.dot{flex:none;width:28px;height:28px;border-radius:9px;display:grid;place-items:center;background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent);font-weight:700;font-size:14px}
+@media (min-width:900px){
+  section.feat .wrap{grid-template-columns:1fr 1fr;gap:70px}
+  section.feat.flip .media{order:2}
+}
+.wide{border-radius:20px;overflow:hidden;box-shadow:var(--shadow);border:1px solid var(--line)}
+section.dark{background:var(--deep);color:var(--deep-ink)}
+section.dark p,section.dark li span{color:color-mix(in srgb,var(--deep-ink) 70%,transparent)}
+section.dark li b{color:var(--deep-ink)}
+
+/* promises */
+.promise{padding:70px 0;background:var(--paper);border-block:1px solid var(--line)}
+.promise h2{font:700 clamp(28px,4.4vw,40px)/1.15 var(--serif);text-align:center;margin:0 0 8px}
+.promise .sub{text-align:center;color:var(--muted);margin:0 auto 34px;max-width:560px}
+.grid3{display:grid;gap:14px}
+@media (min-width:700px){.grid3{grid-template-columns:repeat(3,1fr)}}
+.card{background:var(--bg);border:1px solid var(--line);border-radius:20px;padding:20px}
+.card h3{margin:0 0 6px;font:600 19px/1.3 var(--serif)}
+.card p{margin:0;color:var(--muted);font-size:15px}
+
+/* join */
+.join{padding:80px 0}
+.join .box{max-width:640px;margin:0 auto;text-align:center}
+.join h2{font:700 clamp(30px,5vw,46px)/1.1 var(--serif);letter-spacing:-.02em;margin:0 0 12px}
+.join p{color:var(--muted);margin:0 0 24px}
+.wl{display:flex;gap:8px;max-width:460px;margin:0 auto}
+.wl input{flex:1;min-width:0;font:16px var(--sans);padding:14px 16px;border-radius:14px;border:1px solid var(--line);background:var(--paper);color:var(--ink);outline:none}
+.wl input:focus{border-color:var(--accent)}
+.msg{min-height:22px;margin-top:10px;font-size:15px;color:var(--muted)}
+.or{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:14px;max-width:460px;margin:26px auto}
+.or::before,.or::after{content:"";flex:1;height:1px;background:var(--line)}
+
+footer{border-top:1px solid var(--line);padding:30px 0 calc(30px + env(safe-area-inset-bottom));color:var(--muted);font-size:14px}
+footer .wrap{display:flex;flex-wrap:wrap;gap:10px 24px;justify-content:space-between}
+footer a{text-decoration:none;font-weight:600}
+</style>
+</head>
+<body>
+
+<nav class="top"><div class="wrap">
+  <a class="logo" href="/">Shelf<span>ie</span></a>
+  <a class="signin" href="/app">Sign in</a>
+  <button class="btn primary small" data-guest>Start reading</button>
+</div></nav>
+
+<header class="hero"><div class="wrap">
+  <div>
+    <span class="kicker">Free classics · Friends · No ads</span>
+    <h1>Read beautifully. <em>Together.</em></h1>
+    <p class="lede">A calm, gorgeous reader for 70,000+ free classics, with your shelves, highlights and reading stats, and friends to read alongside. No paywalls, ever.</p>
+    <div class="ctas">
+      <button class="btn primary" data-guest>Start reading free</button>
+      <a class="btn" href="/download/android" id="apkBtn" hidden>
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 18c0 .55.45 1 1 1h1v3.5a1.5 1.5 0 0 0 3 0V19h2v3.5a1.5 1.5 0 0 0 3 0V19h1c.55 0 1-.45 1-1V8H6zM3.5 8A1.5 1.5 0 0 0 2 9.5v7a1.5 1.5 0 0 0 3 0v-7A1.5 1.5 0 0 0 3.5 8m17 0A1.5 1.5 0 0 0 19 9.5v7a1.5 1.5 0 0 0 3 0v-7A1.5 1.5 0 0 0 20.5 8m-4.97-5.84 1.3-1.3a.5.5 0 0 0-.7-.71L13.65 1.6A5.9 5.9 0 0 0 12 1.36c-.58 0-1.13.09-1.65.24L8.87.15a.5.5 0 0 0-.71.71l1.31 1.31A5.98 5.98 0 0 0 6 7h12a5.98 5.98 0 0 0-2.47-4.84M10 5H9V4h1zm5 0h-1V4h1z"/></svg>
+        Android app</a>
+    </div>
+    <p class="fine">No account needed to start. Your books stay yours: export everything anytime.</p>
+  </div>
+  <div class="duo">
+    <div class="phone back"><img src="/static/site/feed.jpg" alt="Shelfie's friends feed: Asha finished Dracula with a review and a favourite line"></div>
+    <div class="phone front tilt"><img src="/static/site/reader.jpg" alt="Shelfie's reader: Chapter II of Pride and Prejudice with a drop cap"></div>
+  </div>
+</div></header>
+
+<div class="strip"><ul>
+  <li>70,000+ free classics</li><li>Works offline</li><li>Half stars &amp; DNF</li><li>No ads, no paywalls</li><li>Import from Goodreads</li>
+</ul></div>
+
+<section class="feat"><div class="wrap">
+  <div class="media"><div class="phone"><img src="/static/site/discover.jpg" alt="Discover: a grid of free classic book covers by genre" loading="lazy"></div></div>
+  <div>
+    <h2>A reader that gets out of the way</h2>
+    <p>Pages that turn like paper, at a silky 60 frames a second. Typography set for long reading, in Literata, the typeface made for screens.</p>
+    <ul>
+      <li><span class="dot">Aa</span><div><b>Your page, your way</b><span>Four fonts, three spacings, margins and Paper, Sepia, Dusk or Night.</span></div></li>
+      <li><span class="dot">✎</span><div><b>Highlights, notes, bookmarks</b><span>In four colours, collected in a notebook you can export in one tap.</span></div></li>
+      <li><span class="dot">↓</span><div><b>Reads offline</b><span>Books you're reading download automatically. Your place syncs when you're back.</span></div></li>
+    </ul>
+  </div>
+</div></section>
+
+<section class="feat dark flip"><div class="wrap">
+  <div class="media"><div class="phone"><img src="/static/site/buddy.jpg" alt="A buddy read: Ravi and Asha's progress and a chapter discussion" loading="lazy"></div></div>
+  <div>
+    <h2>Buddy reads, without the spoilers</h2>
+    <p>Pick a book and a friend. See each other's progress and favourite lines right in the text, and talk chapter by chapter.</p>
+    <ul>
+      <li><span class="dot">✓</span><div><b>Spoiler-free by design</b><span>Comments and highlights from further ahead stay hidden until you get there.</span></div></li>
+      <li><span class="dot">✓</span><div><b>Free for everyone</b><span>No premium tier to read with friends.</span></div></li>
+    </ul>
+  </div>
+</div></section>
+
+<section class="feat"><div class="wrap">
+  <div class="media"><div class="phone"><img src="/static/site/feed.jpg" alt="The friends feed with a finished book, a review, likes and comments" loading="lazy"></div></div>
+  <div>
+    <h2>A feed of what friends actually think</h2>
+    <p>Not "Asha opened a book." Real moments: a finished book with a few honest words, a favourite line, a thought from page 120.</p>
+    <ul>
+      <li><span class="dot">♥</span><div><b>Likes and comments</b><span>Talk about books with the people you read with.</span></div></li>
+      <li><span class="dot">⚑</span><div><b>Private when you want</b><span>Every book is Everyone, Friends, or Only me.</span></div></li>
+    </ul>
+  </div>
+</div></section>
+
+<section class="feat flip"><div class="wrap">
+  <div class="media"><div class="phone"><img src="/static/site/stats.jpg" alt="Reading stats: a 5-day streak, a yearly goal and minutes read per day" loading="lazy"></div></div>
+  <div>
+    <h2>Stats and streaks, free</h2>
+    <p>Reading time counts itself while you read. Streaks, a yearly goal with pacing, books per month, all without a subscription.</p>
+  </div>
+</div></section>
+
+<section class="feat"><div class="wrap" style="grid-template-columns:1fr">
+  <div style="text-align:center;max-width:640px;margin:0 auto">
+    <h2>Two pages, like a real book</h2>
+    <p style="margin:0 auto">On tablets and laptops, Shelfie lays out a proper spread, with each chapter opening on a left-hand page.</p>
+  </div>
+  <div class="wide"><img src="/static/site/spread.jpg" alt="A two-page spread of Pride and Prejudice in the Night theme" loading="lazy"></div>
+</div></section>
+
+<section class="promise"><div class="wrap">
+  <h2>Built from what readers asked for</h2>
+  <p class="sub">We studied what readers complain about in today’s reading apps. These are the promises we kept.</p>
+  <div class="grid3">
+    <div class="card"><h3>No paywalls</h3><p>Stats, streaks and reading with friends are free. There's no premium tier to unlock them.</p></div>
+    <div class="card"><h3>No lost pages</h3><p>Your place is saved on your device first and syncs when it can, even after reading offline.</p></div>
+    <div class="card"><h3>Your data, portable</h3><p>Import from Goodreads or StoryGraph with a report of anything that didn't fit. Export shelves and highlights anytime.</p></div>
+    <div class="card"><h3>Half stars and DNF</h3><p>Rate a 3.5 and mark Did not finish. Small things, finally there.</p></div>
+    <div class="card"><h3>Quiet by default</h3><p>No streams of notifications. Activity waits for you behind the bell.</p></div>
+    <div class="card"><h3>No AI judging you</h3><p>Your reading isn't fed into summaries of who you are. Your shelves are yours.</p></div>
+  </div>
+</div></section>
+
+<section class="join" id="join"><div class="wrap"><div class="box">
+  <h2>Start reading today</h2>
+  <p>Read and keep your shelves as a guest right now, no invite needed. Friends and buddy reads open up when you join.</p>
+  <button class="btn primary" data-guest style="min-width:240px">Start reading free</button>
+  <div class="or">Shelfie is invite-only while it grows</div>
+  <form class="wl" id="wl"><input type="email" required maxlength="254" placeholder="you@example.com" autocomplete="email" aria-label="Your email"><button class="btn" type="submit">Request invite</button></form>
+  <div class="msg" id="wlMsg" role="status"></div>
+  <p style="font-size:15px;margin:14px 0 0">Got an invite link? Just open it. Already a member? <a href="/app" style="font-weight:600">Sign in</a></p>
+</div></div></section>
+
+<footer><div class="wrap">
+  <span><b style="color:var(--ink)">Shelfie</b> · free classics come from <a href="https://www.gutenberg.org" rel="noopener">Project Gutenberg</a></span>
+  <span><a href="/app">Sign in</a> · <a href="#join">Request an invite</a></span>
+</div></footer>
+
+<script>
+// start as a guest: one tap, no form
+document.querySelectorAll("[data-guest]").forEach(b=>b.addEventListener("click",async()=>{
+  b.disabled=true;const label=b.textContent;b.textContent="Opening Shelfie…";
+  try{const r=await fetch("/api/auth/guest",{method:"POST"});if(!r.ok)throw 0;location.href="/app"}
+  catch{b.disabled=false;b.textContent=label;alert("Couldn't start right now. Please try again in a minute.")}
+}));
+// the Android app link appears once a build is available
+fetch("/api/site").then(r=>r.json()).then(s=>{if(s.apk){const a=document.getElementById("apkBtn");a.hidden=false;a.title=`Shelfie for Android · ${s.apk_mb} MB`}}).catch(()=>{});
+document.getElementById("wl").addEventListener("submit",async e=>{
+  e.preventDefault();const f=e.target,msg=document.getElementById("wlMsg"),btn=f.querySelector("button");btn.disabled=true;
+  try{
+    const r=await fetch("/api/waitlist",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:f.querySelector("input").value})});
+    if(!r.ok){const d=await r.json().catch(()=>({}));throw new Error(d.detail||"Please try again")}
+    f.hidden=true;msg.textContent="Thanks! We'll email you an invite link when there's a spot.";
+  }catch(err){msg.textContent=err.message;btn.disabled=false}
+});
+</script>
+</body>
+</html>

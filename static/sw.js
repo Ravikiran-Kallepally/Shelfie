@@ -2,8 +2,8 @@
    Book text never changes, so it is cache-first. Everything else is network-first with a
    short timeout, so a phone that can't reach the server (away from home) falls back to
    the last copy quickly. Writes are never cached; the page queues them while offline. */
-const V = "shelfie-v2"; // v2: accounts. Bumping drops caches holding another era's API data
-const SHELL = ["/", "/static/manifest.webmanifest", "/static/icon.svg"];
+const V = "shelfie-v3"; // v3: / became the public website, the app shell is /app
+const SHELL = ["/app", "/static/manifest.webmanifest", "/static/icon.svg"];
 
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(V + "-shell").then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
@@ -56,7 +56,8 @@ async function networkFirst(req, name, ms = 3000) {
     const res = await Promise.race([net, new Promise(r => setTimeout(r, ms))]);
     if (res) return res;
   } catch {}
-  const hit = (await c.match(req)) || (req.mode === "navigate" && (await c.match("/")));
+  // offline, any app page falls back to the app shell (never the website at /)
+  const hit = (await c.match(req)) || (req.mode === "navigate" && (await c.match("/app")));
   if (hit) return fromCache(hit);
   return net;
 }
