@@ -218,6 +218,7 @@ dialog.sheet::backdrop{background:rgba(20,14,8,.45);animation:fade .3s ease}
 #rText h3.ch{font-size:1.3em;padding-top:2.2em;margin:0 0 1.4em}
 #rText h3.ch+h3.ch{padding-top:0;font-size:1.05em;margin-top:-.8em}
 #rText h3+p,#rText h3+p.v{text-indent:0}
+#rText .chunk>h3.ch+p::first-line{font-variant-caps:small-caps;letter-spacing:.03em}
 #rText .chunk>h3.ch+p::first-letter{float:left;font-size:3.2em;line-height:.82;padding:.06em .08em 0 0;font-weight:600;color:var(--r-accent)}
 #rText em{font-style:italic}
 #rText .fin{text-align:center;padding-top:4em;break-before:column}
@@ -226,6 +227,16 @@ dialog.sheet::backdrop{background:rgba(20,14,8,.45);animation:fade .3s ease}
 #rText .fin button{font:600 16px system-ui,sans-serif;background:var(--r-accent);color:var(--r-bg);border:none;padding:12px 22px;border-radius:12px;margin:4px}
 #rText .fin button.alt{background:transparent;color:var(--r-ink);border:1px solid var(--r-line)}
 #rText .end{display:block;height:1px}
+/* paper you can almost feel: a faint grain on the light papers */
+#reader.t-paper,#reader.t-sepia{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .36 0 0 0 0 .26 0 0 0 0 .12 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+/* the edge of the book block: pages read stack up on the left, pages to come on the right */
+.edges{position:absolute;top:calc(var(--sat) + 48px);bottom:calc(var(--sab) + 44px);width:2px;pointer-events:none;opacity:.85;
+  background:repeating-linear-gradient(90deg,var(--r-line) 0 1px,transparent 1px 2px);transition:width .4s var(--ease)}
+.edges.l{left:2px;border-radius:0 2px 2px 0}.edges.r{right:2px;border-radius:2px 0 0 2px}
+/* two pages open on a desk: a soft shadow where they meet the spine */
+#reader.spread::after{content:"";position:absolute;top:0;bottom:0;left:50%;width:72px;transform:translateX(-50%);pointer-events:none;
+  background:linear-gradient(90deg,transparent,rgba(0,0,0,.05) 40%,rgba(0,0,0,.13) 50%,rgba(0,0,0,.05) 60%,transparent)}
+::highlight(resume){background-color:rgba(224,122,74,.2)}
 .rhead,.rfoot{position:absolute;left:0;right:0;display:flex;align-items:center;gap:12px;padding:0 20px;font:12px/1 system-ui,sans-serif;color:var(--r-muted);font-variant-numeric:tabular-nums;pointer-events:none}
 .rhead{top:var(--sat);height:40px;justify-content:center}
 .rhead span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:80%}
@@ -712,6 +723,7 @@ body.anon{padding-bottom:24px}
 <!-- reader -->
 <div id="reader" hidden>
   <div class="rhead"><span id="rHead"></span></div>
+  <div class="edges l" id="eL"></div><div class="edges r" id="eR"></div>
   <div id="rView"><div id="rText"></div></div>
   <div class="rfoot"><span id="rLeft"></span><span id="rRight"></span></div>
   <div class="rbar top">
@@ -763,6 +775,7 @@ body.anon{padding-bottom:24px}
   <div class="field"><label>Alignment</label><div class="opt" id="sAlign"></div></div>
   <div class="field" id="sLayoutF"><label>Pages on wide screens</label><div class="opt" id="sLayout"></div></div>
   <div class="field"><label>Theme</label><div class="swatches" id="sTheme"></div></div>
+  <div class="field"><label>Page turns</label><div class="opt" id="sFeel"></div></div>
 </div></dialog>
 
 <div class="toast" id="toast"></div>
@@ -847,6 +860,12 @@ async function copyText(t,msg="Copied"){
 let toastT;function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("show");clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove("show"),2200)}
 const esc=s=>(s??"").toString().replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 function stars(r){if(!r)return"";let s="";for(let i=1;i<=5;i++)s+=r>=i?"★":`<span class="${r>=i-.5?"half":"off"}">★</span>`;return s}
+// pages as a printed edition would number them (~1,800 characters a page), the same on every
+// screen and text size, so "I'm on page 112" means the same thing to everyone
+const PRINT=1800,printPages=total=>Math.max(1,Math.ceil(total/PRINT));
+const printPage=(pos,total)=>Math.min(printPages(total),Math.floor((pos||0)*total/PRINT)+1);
+function bookLen(gid){try{return +localStorage.getItem("shelfie.len."+gid)||0}catch{return 0}}
+function pageLabel(b){const n=b.gutenberg_id&&bookLen(b.gutenberg_id);return n&&b.position>0?`Page ${printPage(b.position,n)} of ${printPages(n)}`:""}
 const pctOf=b=>b.gutenberg_id?Math.round((b.position||0)*100):b.pages?Math.min(100,Math.round(b.progress/b.pages*100)):0;
 const PLUS=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>`;
 // covers come through Shelfie's own server (see /api/cover in app.py)
@@ -923,7 +942,7 @@ function renderLibrary(){
   $("#railWrap").hidden=!rail.length;
   $("#rail").innerHTML=rail.map(b=>{const pct=pctOf(b);return `<div class="hero" data-id="${b.entry_id}">${coverHTML(b)}
     <div class="meta"><b>${esc(b.title)}</b><div class="a">${esc(b.author)}</div>
-      <div class="prog"><div class="bar"><i style="width:${pct}%"></i></div>${pct}%</div>
+      <div class="prog"><div class="bar"><i style="width:${pct}%"></i></div>${pct}%</div>${pageLabel(b)?`<div class="a">${pageLabel(b)}</div>`:""}
       ${b.gutenberg_id?`<button class="primary sm" data-read="${b.entry_id}">${b.position>0?"Continue":"Start reading"}</button>`:""}</div></div>`}).join("");
   $("#shelfChips").innerHTML=[["","All",total],...Object.entries(STATUS).map(([k,v])=>[k,v,s.by_status[k]])]
       .map(([k,v,n])=>`<button class="chip ${!f.list&&f.status===k?"on":""}" data-s="${k}">${v}<small>${n}</small></button>`).join("")+
@@ -1123,7 +1142,7 @@ function openBook(id){
     <div class="bookhead">${coverHTML(it)}
       <div style="min-width:0;flex:1"><h2>${esc(it.title)}</h2><div class="muted">${esc(it.author)}${it.pages?` · ${it.pages} pages`:""}</div>
         <div id="starslot" style="margin-top:8px"></div></div></div>
-    ${it.gutenberg_id?`<button class="primary readbtn" id="readBtn">${it.position>0&&it.position<1?`Continue reading · ${pct}%`:it.position>=1?"Read again":"Read now"}</button><div id="offl"></div>`:""}
+    ${it.gutenberg_id?`<button class="primary readbtn" id="readBtn">${it.position>0&&it.position<1?`Continue reading · ${pageLabel(it)?pageLabel(it).replace("Page","page"):pct+"%"}`:it.position>=1?"Read again":"Read now"}</button><div id="offl"></div>`:""}
     ${it.gutenberg_id?`<button class="readbtn" id="budStart" style="margin-top:8px">Read with friends</button>`:""}
     ${it.notes_count?`<div class="field"><label>Highlights &amp; notes · ${it.notes_count}</label><div id="bookNotes" class="muted" style="font-size:14px">Loading…</div></div>`:""}
     <div class="field"><label>Status</label><div class="seg" id="seg">${Object.keys(STATUS).map(k=>`<button data-st="${k}" class="${it.status===k?"on":""}">${SHORT[k]}</button>`).join("")}</div></div>
@@ -1252,7 +1271,7 @@ const LH={tight:1.45,normal:1.65,loose:1.9};
 const MARGIN={narrow:{side:16,measure:760},normal:{side:26,measure:640},wide:{side:44,measure:540}};
 const THEMES={paper:"Paper",sepia:"Sepia",dusk:"Dusk",night:"Night"};
 const THEME_BG={paper:"#fbf7ee",sepia:"#f3e8cf",dusk:"#2e2f33",night:"#0e0d0b"};
-let P={size:matchMedia("(min-width:700px)").matches?21:19,font:"literata",lh:"normal",margin:"normal",align:matchMedia("(min-width:600px)").matches?"justify":"left",layout:"auto",theme:matchMedia("(prefers-color-scheme: dark)").matches?"night":"paper"};
+let P={size:matchMedia("(min-width:700px)").matches?21:19,font:"literata",lh:"normal",margin:"normal",align:matchMedia("(min-width:600px)").matches?"justify":"left",layout:"auto",feel:"off",theme:matchMedia("(prefers-color-scheme: dark)").matches?"night":"paper"};
 try{Object.assign(P,JSON.parse(localStorage.getItem("shelfie.reader")||"{}"))}catch{}
 if(!FONTS[P.font])P.font="literata";
 
@@ -1260,7 +1279,9 @@ const R={item:null,data:null,win:[0,0],secs:[],starts:[],pages:1,page:0,step:1,a
   saveT:0,rcT:0,wheelT:0,lock:null,g:null};
 const textCache=new Map(); // gutenberg id -> promise of prepared book
 
-const fmt=s=>esc(s).replace(/_([^_\n]+)_/g,"<em>$1</em>");
+// printed-book dashes: "--" becomes an em dash. The zero-width space after it keeps every
+// character offset (and so every saved highlight) exactly where it was
+const fmt=s=>esc(s).replace(/_([^_\n]+)_/g,"<em>$1</em>").replace(/--/g,"—​");
 function prepare(d){
   const B=d.blocks,n=B.length,cs=new Array(n+1);let c=0;
   for(let i=0;i<n;i++){cs[i]=c;c+=B[i].s.length+1}cs[n]=c;
@@ -1303,7 +1324,7 @@ const pageOfEl=el=>Math.floor((leftOf(el)-leftOf(rText)+2)/R.step);
 const spreadOK=()=>P.layout!=="single"&&rView.clientWidth>=900&&rView.clientWidth>rView.clientHeight*1.15;
 function geometry(){
   const W=rView.clientWidth,m=MARGIN[P.margin];
-  R.spread=spreadOK();
+  R.spread=spreadOK();reader.classList.toggle("spread",R.spread);
   if(R.spread){
     // two pages per screen: each column is half a screen wide including its gutter
     const col=Math.floor(Math.min(m.measure,W/2-2*m.side-12)),gap=W/2-col;
@@ -1375,12 +1396,26 @@ function trackFlush(){
 }
 function go(p,dur=300){
   p=Math.max(0,Math.min(R.pages-1,p));
-  if(R.ready){T.last=Date.now();if(p===R.page+1)T.pages++}
+  if(R.ready){T.last=Date.now();if(p===R.page+1)T.pages++;if(dur&&p!==R.page)rustle()}
   R.page=p;
   setX(-R.page*R.step,dur);
   info();
   clearTimeout(R.rcT);R.rcT=setTimeout(recenter,dur+40);
   if(R.ready){clearTimeout(R.saveT);R.saveT=setTimeout(savePos,900)}
+}
+// a soft paper sound and a tiny tick under the thumb, if the reader wants them
+let AC;
+function rustle(force){
+  if(P.feel!=="soft"&&!force)return;
+  try{navigator.vibrate?.(5)}catch{}
+  try{
+    AC??=new (window.AudioContext||window.webkitAudioContext)();
+    const n=AC.sampleRate*.17|0,buf=AC.createBuffer(1,n,AC.sampleRate),d=buf.getChannelData(0);
+    for(let i=0;i<n;i++){const t=i/n;d[i]=(Math.random()*2-1)*(1-t)*(1-t)*Math.min(1,t*14)}
+    const src=AC.createBufferSource(),f=AC.createBiquadFilter(),g=AC.createGain();
+    f.type="bandpass";f.frequency.value=2200+Math.random()*1200;f.Q.value=.6;g.gain.value=.09;
+    src.buffer=buf;src.connect(f).connect(g).connect(AC.destination);src.start();
+  }catch{}
 }
 function recenter(){
   if(R.g?.drag)return; // never move the strip under a finger
@@ -1402,9 +1437,11 @@ function info(){
   const mins=Math.round(left/(5.7*230)); // ~230 words a minute
   $("#rHead").textContent=ch?ch.title:R.item.title;
   $("#rLeft").textContent=atEnd?"":mins<1?(nextCh?"Last page in chapter":"Last page"):`${mins} min left in ${nextCh||ch?"chapter":"book"}`;
-  $("#rRight").textContent=Math.floor(frac*100)+"%";
+  const pg=R.printPage=atEnd?printPages(D.total):printPage(frac,D.total);
+  $("#rRight").textContent=`${pg} of ${printPages(D.total)}`;
   $("#rChap").textContent=ch?ch.title:"";
-  $("#rPages").textContent=`Page ${pin+1} of ${cp}`;
+  $("#rPages").textContent=`Page ${pg} of ${printPages(D.total)} · ${Math.floor(frac*100)}%`;
+  $("#eL").style.width=Math.round(2+frac*7)+"px";$("#eR").style.width=Math.round(2+(1-frac)*7)+"px";
   if(!R.scrubbing)$("#rSlider").value=Math.round(frac*1000);
   updateRibbon();
 }
@@ -1548,7 +1585,7 @@ document.addEventListener("selectionchange",()=>{
 $("#selBar").addEventListener("pointerdown",e=>e.preventDefault()); // keep the selection alive
 $("#selBar").addEventListener("click",e=>{
   const b=e.target.closest("[data-hl]");const r=R.sel;if(!b||!r)return;
-  const text=r.toString().replace(/\s+/g," ").trim();
+  const text=r.toString().replace(/​/g,"").replace(/\s+/g," ").trim();
   if(b.dataset.hl==="copy"){copyText(`“${text}” — ${R.item.title}, ${R.item.author}`);getSelection().removeAllRanges();return}
   const s=posOf(r.startContainer,r.startOffset),en=posOf(r.endContainer,r.endOffset);
   if(!s||!en){toast("Select text within the book");return}
@@ -1678,18 +1715,29 @@ async function openReader(it,at){
   ANN.list=anns;
   const bud=await budP;if(bud)setBuddy(bud);
   geometry();
-  if(at)jumpTo(at);else jumpToBlock(blockOfChar(startPosition(it)*data.total));
+  try{localStorage.setItem("shelfie.len."+it.gutenberg_id,data.total)}catch{}
+  const resume=startPosition(it);
+  if(at)jumpTo(at);else jumpToBlock(blockOfChar(resume*data.total));
   trackStart();if(BUD.read)refreshBuddy();
   R.ready=true;updateRibbon();
+  if(!at&&resume>0&&resume<1)markResume(R.anchor);
   requestAnimationFrame(()=>ld.classList.add("gone"));
   if(!localStorage.getItem("shelfie.tip")){try{localStorage.setItem("shelfie.tip","1")}catch{}
     setTimeout(()=>toast("Swipe or tap the edges to turn · tap the middle for menu"),500)}
+}
+// like rereading the last lines before carrying on: the paragraph you stopped in glows for a moment
+function markResume(i){
+  if(!HL_OK)return;
+  const k=chunkOfBlock(i),sec=R.secs[k-R.win[0]],el=sec?.children[i-R.data.chunks[k][0]];if(!el)return;
+  const r=new Range();r.selectNodeContents(el);CSS.highlights.set("resume",new Highlight(r));
+  setTimeout(()=>CSS.highlights.delete("resume"),3500);
 }
 function closeReader(){if(history.state?.reader)history.back();else hideReader()}
 function hideReader(){
   if(reader.hidden)return;
   clearTimeout(R.saveT);clearTimeout(R.rcT);
   const saving=savePos(true);
+  if(R.ready&&R.printPage>1&&R.item.position<1)toast(`Your place is saved · page ${R.printPage}`);
   trackFlush();clearInterval(T.tick);
   if(annDlg.open)commitNote();ANN.cur=null;$("#budDlg").close();BUD.read=null;
   R.ready=false;$("#rTocDlg").close();$("#rSetDlg").close();annDlg.close();R.item=null;
@@ -1804,16 +1852,18 @@ function renderSettings(){
   opts("#sMargin",{narrow:"Narrow",normal:"Normal",wide:"Wide"},"margin");
   opts("#sAlign",{justify:"Justified",left:"Ragged"},"align");
   opts("#sLayout",{auto:"Two pages",single:"One page"},"layout");
+  opts("#sFeel",{off:"Silent",soft:"Paper sound"},"feel");
   $("#sLayoutF").hidden=!(rView.clientWidth>=900&&rView.clientWidth>rView.clientHeight*1.15);
   $("#sTheme").innerHTML=Object.entries(THEMES).map(([k,v])=>`<button data-k="${k}" class="t-${k} ${P.theme===k?"on":""}" style="background:${THEME_BG[k]};color:${k==="paper"||k==="sepia"?"#3a2c1e":"#d8d0c4"};border-color:rgba(128,128,128,.3)">${v}</button>`).join("");
 }
 $("#rSetBtn").onclick=()=>{renderSettings();sheet($("#rSetDlg"))};
 let sizeT;
 $("#sSize").addEventListener("input",e=>{P.size=+e.target.value;applyPrefs();clearTimeout(sizeT);sizeT=setTimeout(relayout,120)});
-[["#sFont","font"],["#sLh","lh"],["#sMargin","margin"],["#sAlign","align"],["#sLayout","layout"],["#sTheme","theme"]].forEach(([el,key])=>{
+[["#sFont","font"],["#sLh","lh"],["#sMargin","margin"],["#sAlign","align"],["#sLayout","layout"],["#sTheme","theme"],["#sFeel","feel"]].forEach(([el,key])=>{
   $(el).addEventListener("click",e=>{
     const b=e.target.closest("[data-k]");if(!b||P[key]===b.dataset.k)return;
     P[key]=b.dataset.k;applyPrefs();renderSettings();
+    if(key==="feel"){if(P.feel==="soft")rustle(true);return}
     if(key!=="theme")relayout();
   });
 });
