@@ -207,28 +207,29 @@ dialog.sheet::backdrop{background:rgba(20,14,8,.45);animation:fade .3s ease}
 .t-night{--r-bg:#0e0d0b;--r-ink:#b8afa2;--r-muted:#6c655b;--r-line:#26231f;--r-accent:#d9844f}
 .rsheet{--bg:var(--r-bg);--ink:var(--r-ink);--muted:var(--r-muted);--line:var(--r-line);--card:color-mix(in srgb,var(--r-ink) 5%,var(--r-bg));--accent:var(--r-accent);--accent-ink:var(--r-bg)}
 #rView{position:absolute;left:0;right:0;top:calc(var(--sat) + 40px);bottom:calc(var(--sab) + 36px);overflow:hidden;touch-action:none;cursor:default}
-#rText{height:100%;will-change:transform;column-fill:auto;font-family:var(--r-font);font-size:var(--r-size);line-height:var(--r-lh);text-align:var(--r-align);
+:is(#rText,#rUnder,#rBack){height:100%;will-change:transform;column-fill:auto;font-family:var(--r-font);font-size:var(--r-size);line-height:var(--r-lh);text-align:var(--r-align);
   hyphens:auto;-webkit-hyphens:auto;font-kerning:normal;font-variant-ligatures:common-ligatures;text-rendering:optimizeLegibility;overflow-wrap:break-word;text-wrap:pretty}
-#rText .chunk{break-before:column}
-#rText .spread-pad{height:100%;break-inside:avoid}
-#rText p{margin:0;text-indent:1.5em;orphans:2;widows:2}
-#rText p.v{text-indent:0;white-space:pre-wrap;text-align:left;margin:.7em 0 .7em 1.2em}
-#rText p.c{text-indent:0;white-space:pre-wrap;text-align:center;margin:.9em 0}
-#rText h3{font:600 1.05em/1.35 var(--r-font);text-align:center;margin:1.6em 0 1em;break-after:avoid;text-indent:0;letter-spacing:.03em}
-#rText h3.ch{font-size:1.3em;padding-top:2.2em;margin:0 0 1.4em}
-#rText h3.ch+h3.ch{padding-top:0;font-size:1.05em;margin-top:-.8em}
-#rText h3+p,#rText h3+p.v{text-indent:0}
-#rText .chunk>h3.ch+p::first-line{font-variant-caps:small-caps;letter-spacing:.03em}
-#rText .chunk>h3.ch+p::first-letter{float:left;font-size:3.2em;line-height:.82;padding:.06em .08em 0 0;font-weight:600;color:var(--r-accent)}
-#rText em{font-style:italic}
-#rText .fin{text-align:center;padding-top:4em;break-before:column}
-#rText .fin h3{font-size:1.5em}
-#rText .fin p{text-indent:0;color:var(--r-muted);margin:0 0 1.4em}
-#rText .fin button{font:600 16px system-ui,sans-serif;background:var(--r-accent);color:var(--r-bg);border:none;padding:12px 22px;border-radius:12px;margin:4px}
-#rText .fin button.alt{background:transparent;color:var(--r-ink);border:1px solid var(--r-line)}
-#rText .end{display:block;height:1px}
+:is(#rText,#rUnder,#rBack) .chunk{break-before:column}
+:is(#rText,#rUnder,#rBack) .spread-pad{height:100%;break-inside:avoid}
+:is(#rText,#rUnder,#rBack) p{margin:0;text-indent:1.5em;orphans:2;widows:2}
+:is(#rText,#rUnder,#rBack) p.v{text-indent:0;white-space:pre-wrap;text-align:left;margin:.7em 0 .7em 1.2em}
+:is(#rText,#rUnder,#rBack) p.c{text-indent:0;white-space:pre-wrap;text-align:center;margin:.9em 0}
+:is(#rText,#rUnder,#rBack) h3{font:600 1.05em/1.35 var(--r-font);text-align:center;margin:1.6em 0 1em;break-after:avoid;text-indent:0;letter-spacing:.03em}
+:is(#rText,#rUnder,#rBack) h3.ch{font-size:1.3em;padding-top:2.2em;margin:0 0 1.4em}
+:is(#rText,#rUnder,#rBack) h3.ch+h3.ch{padding-top:0;font-size:1.05em;margin-top:-.8em}
+:is(#rText,#rUnder,#rBack) h3+p,:is(#rText,#rUnder,#rBack) h3+p.v{text-indent:0}
+:is(#rText,#rUnder,#rBack) .chunk>h3.ch+p::first-line{font-variant-caps:small-caps;letter-spacing:.03em}
+:is(#rText,#rUnder,#rBack) .chunk>h3.ch+p::first-letter{float:left;font-size:3.2em;line-height:.82;padding:.06em .08em 0 0;font-weight:600;color:var(--r-accent)}
+:is(#rText,#rUnder,#rBack) em{font-style:italic}
+:is(#rText,#rUnder,#rBack) .fin{text-align:center;padding-top:4em;break-before:column}
+:is(#rText,#rUnder,#rBack) .fin h3{font-size:1.5em}
+:is(#rText,#rUnder,#rBack) .fin p{text-indent:0;color:var(--r-muted);margin:0 0 1.4em}
+:is(#rText,#rUnder,#rBack) .fin button{font:600 16px system-ui,sans-serif;background:var(--r-accent);color:var(--r-bg);border:none;padding:12px 22px;border-radius:12px;margin:4px}
+:is(#rText,#rUnder,#rBack) .fin button.alt{background:transparent;color:var(--r-ink);border:1px solid var(--r-line)}
+:is(#rText,#rUnder,#rBack) .end{display:block;height:1px}
 /* paper you can almost feel: a faint grain on the light papers */
-#reader.t-paper,#reader.t-sepia{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .36 0 0 0 0 .26 0 0 0 0 .12 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+#reader{--grain:none;background-image:var(--grain)}
+#reader.t-paper,#reader.t-sepia{--grain:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .36 0 0 0 0 .26 0 0 0 0 .12 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
 /* the edge of the book block: pages read stack up on the left, pages to come on the right */
 .edges{position:absolute;top:calc(var(--sat) + 48px);bottom:calc(var(--sab) + 44px);width:2px;pointer-events:none;opacity:.85;
   background:repeating-linear-gradient(90deg,var(--r-line) 0 1px,transparent 1px 2px);transition:width .4s var(--ease)}
@@ -236,6 +237,20 @@ dialog.sheet::backdrop{background:rgba(20,14,8,.45);animation:fade .3s ease}
 /* two pages open on a desk: a soft shadow where they meet the spine */
 #reader.spread::after{content:"";position:absolute;top:0;bottom:0;left:50%;width:72px;transform:translateX(-50%);pointer-events:none;
   background:linear-gradient(90deg,transparent,rgba(0,0,0,.05) 40%,rgba(0,0,0,.13) 50%,rgba(0,0,0,.05) 60%,transparent)}
+/* page curl: the next page waits underneath; the turning page folds back over the current one */
+#rCurl{position:absolute;inset:0;pointer-events:none;z-index:1;--f:0px;--w:0px}
+#rCurl>*{position:absolute;top:0;bottom:0;left:0}
+.cu-under{right:0;background:var(--r-bg);background-image:var(--grain);clip-path:inset(0 0 0 var(--f))}
+.cu-shade{width:56px;transform:translateX(var(--f));background:linear-gradient(90deg,rgba(0,0,0,.22),rgba(0,0,0,.06) 40%,transparent);opacity:var(--o,1)}
+.cu-cast{width:40px;transform:translateX(calc(2 * var(--f) - var(--w) - 40px));background:linear-gradient(90deg,transparent,rgba(0,0,0,.14));opacity:var(--o,1)}
+.cu-flap{width:var(--w);transform:translateX(calc(var(--f) - var(--w)));clip-path:inset(0 0 0 var(--f));
+  background-color:color-mix(in srgb,var(--r-bg) 94%,var(--r-ink));
+  background-image:linear-gradient(270deg,rgba(0,0,0,.18) 0,rgba(255,255,255,.28) 3%,rgba(255,255,255,.12) 18%,rgba(0,0,0,.04) 60%,rgba(0,0,0,.08) 100%),var(--grain)}
+/* the back of the page, its print showing faintly through the paper, mirrored */
+.cu-back{position:absolute;inset:0;transform:scaleX(-1);opacity:.13;overflow:hidden}
+.t-dusk .cu-back,.t-night .cu-back{opacity:.09}
+#rBack{transform:translate3d(calc(var(--bx,0px) - var(--f)),0,0)!important}
+.t-dusk .cu-flap,.t-night .cu-flap{background-image:linear-gradient(270deg,rgba(0,0,0,.45) 0,rgba(255,255,255,.07) 3%,rgba(255,255,255,.03) 18%,rgba(0,0,0,.1) 100%)}
 ::highlight(resume){background-color:rgba(224,122,74,.2)}
 .rhead,.rfoot{position:absolute;left:0;right:0;display:flex;align-items:center;gap:12px;padding:0 20px;font:12px/1 system-ui,sans-serif;color:var(--r-muted);font-variant-numeric:tabular-nums;pointer-events:none}
 .rhead{top:var(--sat);height:40px;justify-content:center}
@@ -724,7 +739,8 @@ body.anon{padding-bottom:24px}
 <div id="reader" hidden>
   <div class="rhead"><span id="rHead"></span></div>
   <div class="edges l" id="eL"></div><div class="edges r" id="eR"></div>
-  <div id="rView"><div id="rText"></div></div>
+  <div id="rView"><div id="rText"></div>
+    <div id="rCurl" hidden><div class="cu-under"><div id="rUnder"></div></div><div class="cu-shade"></div><div class="cu-cast"></div><div class="cu-flap"><div class="cu-back"><div id="rBack"></div></div></div></div></div>
   <div class="rfoot"><span id="rLeft"></span><span id="rRight"></span></div>
   <div class="rbar top">
     <button class="iconbtn" id="rClose" aria-label="Back to library"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button>
@@ -775,7 +791,8 @@ body.anon{padding-bottom:24px}
   <div class="field"><label>Alignment</label><div class="opt" id="sAlign"></div></div>
   <div class="field" id="sLayoutF"><label>Pages on wide screens</label><div class="opt" id="sLayout"></div></div>
   <div class="field"><label>Theme</label><div class="swatches" id="sTheme"></div></div>
-  <div class="field"><label>Page turns</label><div class="opt" id="sFeel"></div></div>
+  <div class="field"><label>Page turn</label><div class="opt" id="sTurn"></div></div>
+  <div class="field"><label>Page sound</label><div class="opt" id="sFeel"></div></div>
 </div></dialog>
 
 <div class="toast" id="toast"></div>
@@ -1271,7 +1288,7 @@ const LH={tight:1.45,normal:1.65,loose:1.9};
 const MARGIN={narrow:{side:16,measure:760},normal:{side:26,measure:640},wide:{side:44,measure:540}};
 const THEMES={paper:"Paper",sepia:"Sepia",dusk:"Dusk",night:"Night"};
 const THEME_BG={paper:"#fbf7ee",sepia:"#f3e8cf",dusk:"#2e2f33",night:"#0e0d0b"};
-let P={size:matchMedia("(min-width:700px)").matches?21:19,font:"literata",lh:"normal",margin:"normal",align:matchMedia("(min-width:600px)").matches?"justify":"left",layout:"auto",feel:"off",theme:matchMedia("(prefers-color-scheme: dark)").matches?"night":"paper"};
+let P={size:matchMedia("(min-width:700px)").matches?21:19,font:"literata",lh:"normal",margin:"normal",align:matchMedia("(min-width:600px)").matches?"justify":"left",layout:"auto",turn:"curl",feel:"off",theme:"sepia"};
 try{Object.assign(P,JSON.parse(localStorage.getItem("shelfie.reader")||"{}"))}catch{}
 if(!FONTS[P.font])P.font="literata";
 
@@ -1333,7 +1350,7 @@ function geometry(){
     const pad=Math.max(m.side,(W-m.measure)/2),col=W-2*pad;
     Object.assign(rText.style,{width:col+"px",marginLeft:pad+"px",columnWidth:col+"px",columnGap:2*pad+"px"});
   }
-  R.step=W;R.size=[W,rView.clientHeight];
+  R.step=W;R.size=[W,rView.clientHeight];R.geo=(R.geo||0)+1;
 }
 // in a spread every chapter starts on a left-hand page, so dropping a chunk while
 // re-windowing shifts the text by whole screens and nothing on screen moves
@@ -1403,20 +1420,71 @@ function go(p,dur=300){
   clearTimeout(R.rcT);R.rcT=setTimeout(recenter,dur+40);
   if(R.ready){clearTimeout(R.saveT);R.saveT=setTimeout(savePos,900)}
 }
-// a soft paper sound and a tiny tick under the thumb, if the reader wants them
+// a page turning: the swish of paper through air, the faint crackle of its fibres, and a soft
+// flap as it lands. Made on the fly (no audio files), a little different every time
 let AC;
+function noise(sec,shape){
+  const n=AC.sampleRate*sec|0,buf=AC.createBuffer(1,n,AC.sampleRate),d=buf.getChannelData(0);
+  for(let i=0;i<n;i++)d[i]=shape(i/n,Math.random()*2-1);
+  return buf;
+}
 function rustle(force){
   if(P.feel!=="soft"&&!force)return;
-  try{navigator.vibrate?.(5)}catch{}
+  try{navigator.vibrate?.(4)}catch{}
   try{
     AC??=new (window.AudioContext||window.webkitAudioContext)();
-    const n=AC.sampleRate*.17|0,buf=AC.createBuffer(1,n,AC.sampleRate),d=buf.getChannelData(0);
-    for(let i=0;i<n;i++){const t=i/n;d[i]=(Math.random()*2-1)*(1-t)*(1-t)*Math.min(1,t*14)}
-    const src=AC.createBufferSource(),f=AC.createBiquadFilter(),g=AC.createGain();
-    f.type="bandpass";f.frequency.value=2200+Math.random()*1200;f.Q.value=.6;g.gain.value=.09;
-    src.buffer=buf;src.connect(f).connect(g).connect(AC.destination);src.start();
+    if(AC.state==="suspended")AC.resume();
+    const t=AC.currentTime+.01,j=.9+Math.random()*.2,out=AC.createGain();
+    out.gain.value=.55;out.connect(AC.destination);
+    const play=(buf,at,nodes)=>{const src=AC.createBufferSource();src.buffer=buf;src.playbackRate.value=j;
+      nodes.reduce((a,b)=>a.connect(b),src).connect(out);src.start(at)};
+    // swish: air past a moving page, its pitch rising and settling
+    const sw=AC.createBiquadFilter();sw.type="bandpass";sw.Q.value=.8;
+    sw.frequency.setValueAtTime(700,t);sw.frequency.linearRampToValueAtTime(3000*j,t+.12);sw.frequency.exponentialRampToValueAtTime(1300,t+.32);
+    const sg=AC.createGain();sg.gain.setValueAtTime(.0001,t);sg.gain.exponentialRampToValueAtTime(.5,t+.08);sg.gain.exponentialRampToValueAtTime(.12,t+.22);sg.gain.exponentialRampToValueAtTime(.0001,t+.34);
+    play(noise(.36,(x,r)=>r),t,[sw,sg]);
+    // crackle: sparse ticks of paper fibre bending, densest mid-turn
+    let tick=0;
+    const cr=noise(.3,(x,r)=>{if(Math.random()<.006*Math.sin(Math.PI*x))tick=.5+Math.random()*.5;tick*=.82;return r*tick});
+    const hp=AC.createBiquadFilter();hp.type="highpass";hp.frequency.value=2600;
+    const cg=AC.createGain();cg.gain.value=.35;
+    play(cr,t+.03,[hp,cg]);
+    // flap: the page settling against the others
+    const lp=AC.createBiquadFilter();lp.type="lowpass";lp.frequency.value=380;
+    const fg=AC.createGain();fg.gain.value=.9;
+    play(noise(.07,(x,r)=>r*Math.pow(1-x,3)),t+.27,[lp,fg]);
   }catch{}
 }
+const CURL={raf:0,done:null,sec:null,geo:0};
+const curlOK=()=>P.turn==="curl"&&!R.spread&&!matchMedia("(prefers-reduced-motion: reduce)").matches;
+function curlPrep(B){ // lay page B out under the fold (once per chapter; later turns only move it)
+  const i=secAt(B),sec=R.secs[i],u=$("#rUnder");
+  if(CURL.sec!==sec||CURL.geo!==R.geo){u.replaceChildren(sec.cloneNode(true));u.style.cssText=rText.style.cssText;CURL.sec=sec;CURL.geo=R.geo}
+  u.style.transition="none";u.style.transform=`translate3d(${-(B-R.starts[i])*R.step}px,0,0)`;
+  const c=$("#rCurl");c.style.setProperty("--w",R.step+"px");c.hidden=false;
+}
+function curlBack(A){ // the turning page itself, for its show-through on the back
+  const i=secAt(A),sec=R.secs[i],b=$("#rBack");
+  if(CURL.bsec!==sec||CURL.bgeo!==R.geo){b.replaceChildren(sec.cloneNode(true));b.style.cssText=rText.style.cssText;CURL.bsec=sec;CURL.bgeo=R.geo}
+  b.style.transition="none";$("#rCurl").style.setProperty("--bx",-(A-R.starts[i])*R.step+"px");
+}
+function curlAt(f){
+  const W=R.step,c=$("#rCurl");f=Math.max(0,Math.min(W,f));
+  c.style.setProperty("--f",f+"px");c.style.setProperty("--o",Math.min(1,Math.sin(Math.PI*f/W)*1.6).toFixed(3));
+}
+function curlStart(dir){ // forward: fold starts at the right edge; back: the previous page is underneath us
+  if(dir>0){curlPrep(R.page+1);curlBack(R.page);curlAt(R.step)}
+  else{curlPrep(R.page);curlBack(R.page-1);curlAt(0);go(R.page-1,0)}
+}
+function curlTo(from,to,after){
+  cancelAnimationFrame(CURL.raf);
+  const ms=140+320*Math.abs(to-from)/R.step,t0=performance.now();
+  CURL.done=()=>{CURL.done=null;after?.();$("#rCurl").hidden=true;clearTimeout(R.rcT);R.rcT=setTimeout(recenter,60)};
+  const step=now=>{const t=Math.min(1,(now-t0)/ms),e=t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+    curlAt(from+(to-from)*e);if(t<1)CURL.raf=requestAnimationFrame(step);else CURL.done?.()};
+  CURL.raf=requestAnimationFrame(step);
+}
+function curlFlush(){cancelAnimationFrame(CURL.raf);CURL.done?.()} // a quick second tap: land the first page now
 function recenter(){
   if(R.g?.drag)return; // never move the strip under a finger
   const i=secAt(R.page),k=R.win[0]+i,n=R.data.chunks.length;
@@ -1661,10 +1729,14 @@ function ensureRoom(dir){
   if((dir>0&&R.page+dir>R.pages-1&&R.win[1]<last)||(dir<0&&R.page+dir<0&&R.win[0]>0)){clearTimeout(R.rcT);recenter()}
 }
 function turn(dir){
-  ensureRoom(dir);
+  curlFlush();ensureRoom(dir);
   const target=R.page+dir;
   if(target<0||target>R.pages-1){ // nudge at the very start/end of the book
     setX(-R.page*R.step-dir*28,120);setTimeout(()=>setX(-R.page*R.step,220),120);return}
+  if(curlOK()){
+    rustle();curlStart(dir);
+    if(dir>0)curlTo(R.step,0,()=>go(R.page+1,0));else curlTo(0,R.step);
+    return}
   go(target);
 }
 const chrome=on=>reader.classList.toggle("chrome",on??!reader.classList.contains("chrome"));
@@ -1687,7 +1759,7 @@ function themeColor(c){
 }
 async function relayout(){ // after a size/font/spacing change: keep the same paragraph on screen
   if(!R.ready)return;
-  const a=R.anchor;await fontsReady();geometry();R.data.html=[];jumpToBlock(a);
+  curlFlush();const a=R.anchor;await fontsReady();geometry();R.data.html=[];jumpToBlock(a);
 }
 
 async function openReader(it,at){
@@ -1735,7 +1807,7 @@ function markResume(i){
 function closeReader(){if(history.state?.reader)history.back();else hideReader()}
 function hideReader(){
   if(reader.hidden)return;
-  clearTimeout(R.saveT);clearTimeout(R.rcT);
+  curlFlush();clearTimeout(R.saveT);clearTimeout(R.rcT);
   const saving=savePos(true);
   if(R.ready&&R.printPage>1&&R.item.position<1)toast(`Your place is saved · page ${R.printPage}`);
   trackFlush();clearInterval(T.tick);
@@ -1762,7 +1834,7 @@ document.addEventListener("visibilitychange",()=>{
 /* gestures: the page follows your finger; a flick or a 18% drag turns it */
 rView.addEventListener("pointerdown",e=>{
   if(!R.ready||e.button>0||e.target.closest("button"))return;
-  clearTimeout(R.rcT);recenter(); // settle any pending re-centre before the finger moves the strip
+  curlFlush();clearTimeout(R.rcT);recenter(); // settle any pending re-centre before the finger moves the strip
   R.g={id:e.pointerId,x:e.clientX,y:e.clientY,t:performance.now(),lx:e.clientX,lt:performance.now(),v:0,drag:false,touch:e.pointerType!=="mouse"};
 });
 rView.addEventListener("pointermove",e=>{
@@ -1773,12 +1845,24 @@ rView.addEventListener("pointermove",e=>{
     g.drag=true;clearTimeout(R.rcT);rView.setPointerCapture(e.pointerId);getSelection()?.removeAllRanges();
   }
   const now=performance.now();g.v=(e.clientX-g.lx)/Math.max(1,now-g.lt);g.lx=e.clientX;g.lt=now;
+  if(g.curl===undefined){ // curl mode: grab the page; at the covers, fall back to a gentle rubber band
+    const dir=dx<0?1:-1,t=R.page+dir;
+    g.curl=curlOK()&&t>=0&&t<=R.pages-1?dir:0;
+    if(g.curl){ensureRoom(dir);curlStart(dir);rustle()}
+  }
+  if(g.curl){curlAt(g.curl>0?R.step+dx:dx);return}
   const edge=(dx>0&&R.page===0)||(dx<0&&R.page===R.pages-1);
   setX(-R.page*R.step+(edge?dx*.25:dx),0);
 });
 function endGesture(e,cancel){
   const g=R.g;if(!g||e.pointerId!==g.id)return;R.g=null;
   const dx=e.clientX-g.x,dy=e.clientY-g.y;
+  if(g.drag&&g.curl){
+    const fwd=g.curl>0,f=fwd?R.step+dx:dx;
+    const commit=!cancel&&(fwd?(dx<-R.step*.18||g.v<-.35):(dx>R.step*.18||g.v>.35));
+    if(fwd)commit?curlTo(f,0,()=>go(R.page+1,0)):curlTo(f,R.step);
+    else commit?curlTo(f,R.step):curlTo(f,0,()=>go(R.page+1,0));
+    return}
   if(g.drag){
     let dir=0;
     if(!cancel){if(dx<-R.step*.18||g.v<-.35)dir=1;else if(dx>R.step*.18||g.v>.35)dir=-1}
@@ -1852,18 +1936,19 @@ function renderSettings(){
   opts("#sMargin",{narrow:"Narrow",normal:"Normal",wide:"Wide"},"margin");
   opts("#sAlign",{justify:"Justified",left:"Ragged"},"align");
   opts("#sLayout",{auto:"Two pages",single:"One page"},"layout");
-  opts("#sFeel",{off:"Silent",soft:"Paper sound"},"feel");
+  opts("#sTurn",{curl:"Curl",slide:"Slide"},"turn");
+  opts("#sFeel",{off:"Silent",soft:"Paper"},"feel");
   $("#sLayoutF").hidden=!(rView.clientWidth>=900&&rView.clientWidth>rView.clientHeight*1.15);
   $("#sTheme").innerHTML=Object.entries(THEMES).map(([k,v])=>`<button data-k="${k}" class="t-${k} ${P.theme===k?"on":""}" style="background:${THEME_BG[k]};color:${k==="paper"||k==="sepia"?"#3a2c1e":"#d8d0c4"};border-color:rgba(128,128,128,.3)">${v}</button>`).join("");
 }
 $("#rSetBtn").onclick=()=>{renderSettings();sheet($("#rSetDlg"))};
 let sizeT;
 $("#sSize").addEventListener("input",e=>{P.size=+e.target.value;applyPrefs();clearTimeout(sizeT);sizeT=setTimeout(relayout,120)});
-[["#sFont","font"],["#sLh","lh"],["#sMargin","margin"],["#sAlign","align"],["#sLayout","layout"],["#sTheme","theme"],["#sFeel","feel"]].forEach(([el,key])=>{
+[["#sFont","font"],["#sLh","lh"],["#sMargin","margin"],["#sAlign","align"],["#sLayout","layout"],["#sTheme","theme"],["#sTurn","turn"],["#sFeel","feel"]].forEach(([el,key])=>{
   $(el).addEventListener("click",e=>{
     const b=e.target.closest("[data-k]");if(!b||P[key]===b.dataset.k)return;
     P[key]=b.dataset.k;applyPrefs();renderSettings();
-    if(key==="feel"){if(P.feel==="soft")rustle(true);return}
+    if(key==="feel"||key==="turn"){if(key==="feel"&&P.feel==="soft")rustle(true);return}
     if(key!=="theme")relayout();
   });
 });
