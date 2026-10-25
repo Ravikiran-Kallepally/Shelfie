@@ -24,9 +24,10 @@
   --sat:env(safe-area-inset-top,0px); --sab:env(safe-area-inset-bottom,0px);
   --tab-h:60px; --serif:Literata,Georgia,"Iowan Old Style",serif;
   --ease:cubic-bezier(.2,.8,.2,1);
+  color-scheme:light;
 }
 @media (prefers-color-scheme: dark){
-  :root{--bg:#1c1814;--card:#262019;--ink:#f1e9dc;--muted:#a69a8a;--line:#3a3128;--accent:#e07a4a;--accent-ink:#1c1814;--star:#f0b548;--ok:#6dbb8a;--shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.25)}
+  :root{--bg:#1c1814;--card:#262019;--ink:#f1e9dc;--muted:#a69a8a;--line:#3a3128;--accent:#e07a4a;--accent-ink:#1c1814;--star:#f0b548;--ok:#6dbb8a;--shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.25);color-scheme:dark}
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 [hidden]{display:none!important}
@@ -34,8 +35,10 @@ html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding-bottom:calc(var(--tab-h) + var(--sab) + 12px);overscroll-behavior-y:none}
 input,select,textarea,button{font:inherit;color:inherit}
 /* 16px inputs stop iOS from zooming on focus */
-input[type=text],input[type=search],input[type=number],input[type=password],select,textarea{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 14px;width:100%;font-size:16px;outline:none}
+input:not([type=range],[type=checkbox],[type=radio],[type=file],[type=color]),select,textarea{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 14px;width:100%;font-size:16px;outline:none}
 input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+/* browser autofill paints its own pale box; keep it in our colours */
+input:-webkit-autofill,input:-webkit-autofill:focus{-webkit-text-fill-color:var(--ink);caret-color:var(--ink);-webkit-box-shadow:0 0 0 1000px var(--card) inset;transition:background-color 9999s}
 textarea{min-height:100px;resize:vertical}
 button{cursor:pointer;border:1px solid var(--line);background:var(--card);border-radius:12px;padding:10px 16px;touch-action:manipulation}
 button:active{transform:scale(.97)}
