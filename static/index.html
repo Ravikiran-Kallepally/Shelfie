@@ -173,6 +173,11 @@ dialog.sheet::backdrop{background:rgba(20,14,8,.45);animation:fade .3s ease}
 .result .meta b{display:block;font-size:15px;line-height:1.3}
 .result .meta span{font-size:13px}
 .result select{width:auto;padding:6px 8px;font-size:14px;border-radius:10px}
+.result.wide{flex-wrap:wrap}
+.ways{flex-basis:100%;display:flex;flex-wrap:wrap;gap:6px;padding-left:56px}
+.ways a,.ways button.way{font-size:13px;padding:5px 10px;border-radius:999px;border:1px solid var(--line);background:none;color:var(--ink);text-decoration:none;cursor:pointer;font-family:inherit}
+.ways button.way.free,.ways a.free{border-color:var(--accent);color:var(--accent);font-weight:600}
+.lang{width:auto;flex:none;padding:6px 10px;font-size:14px;border-radius:999px}
 .menu button{display:flex;align-items:center;gap:14px;width:100%;text-align:left;border:none;background:transparent;padding:14px 4px;border-radius:12px;font-size:16px}
 .menu button:active{background:var(--line)}
 .menu small{display:block;color:var(--muted);font-size:13px}
@@ -584,7 +589,7 @@ body.anon{padding-bottom:24px}
     <div class="h2" style="margin-bottom:4px">Free classics</div>
     <div class="muted" style="font-size:14px">70,000+ public-domain books from Project Gutenberg, free to read here.</div>
     <form class="search" id="dform"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="dq" type="search" placeholder="Title or author" autocomplete="off" enterkeyhint="search"></form>
-    <div class="hrow" id="topics"></div>
+    <div class="hrow"><select class="lang" id="dlang" aria-label="Language"></select><div class="hrow" id="topics" style="margin:0;padding:0"></div></div>
     <div class="grid" id="dgrid"></div>
     <div id="dmore"></div>
   </section>
@@ -1027,10 +1032,21 @@ function showImport(r){
       r.problems.map(p=>`<li>Line ${p.line}${p.title?` · ${esc(p.title)}`:""}: ${esc(p.reason)}</li>`).join("")}</ul></div>`:`<div style="margin-top:4px">Every row came through.</div>`}</div>`;
 }
 
-/* ---- add (Open Library) ---- */
+/* ---- add: any book, with every honest way to read it ---- */
 let sRes=[],sFree=[],sQ="",sT,sCtl;
 $("#sform").addEventListener("submit",e=>{e.preventDefault();$("#sq").blur();runSearch(true)});
 $("#sq").addEventListener("input",()=>{clearTimeout(sT);sT=setTimeout(runSearch,280)});
+const ext=(href,label,cls="")=>`<a href="${esc(href)}" target="_blank" rel="noopener" class="${cls}">${label}</a>`;
+function waysHTML(b,i){
+  const w=b.ways||{},h=[];
+  if(w.read&&!b.entry_id)h.push(`<button class="way free" data-sread="${i}">Read free in Shelfie</button>`);
+  if(w.listen)h.push(`<button class="way free" data-listen="${esc(w.listen)}">Listen free</button>`);
+  if(w.online)h.push(ext(w.online,"Read free online","free"));
+  if(w.borrow)h.push(ext(w.borrow,"Borrow free"));
+  if(!w.read&&!w.online)h.push(ext(w.library,"Find in a library"));
+  if(!w.read&&!w.online)h.push(ext(w.buy,"Buy"));
+  return h.length?`<div class="ways">${h.join("")}</div>`:"";
+}
 async function runSearch(now){
   const q=$("#sq").value.trim();if(q===sQ&&!now)return;sQ=q;
   sCtl?.abort();sCtl=new AbortController();const sig=sCtl.signal;
@@ -1041,35 +1057,39 @@ async function runSearch(now){
   const mineHTML=mine.length?`<div class="sgroup">On your shelves</div>`+mine.map(b=>`<div class="result" data-mine="${b.entry_id}" style="cursor:pointer">${coverHTML(b)}
     <div class="meta"><b>${esc(b.title)}</b><span class="muted">${esc(b.author)} · ${STATUS[b.status]}</span></div></div>`).join(""):"";
   $("#sres").innerHTML=mineHTML+`<div class="sgroup">Searching…</div>`;
-  const get=p=>fetch("/api"+p,{signal:sig}).then(r=>r.ok?r.json():null).catch(()=>null);
-  // Open Library answers in about a second; the free catalogue can take longer, so it fills in after
-  const [ol,free]=[get("/search?q="+encodeURIComponent(q)),get("/free?q="+encodeURIComponent(q))];
-  const paint=(olr,fr)=>{
-    if(sig.aborted)return;
-    sRes=olr?.results||[];sFree=(fr?.results||[]).slice(0,4);
-    let h=mineHTML;
-    if(sFree.length)h+=`<div class="sgroup">Free to read now</div>`+sFree.map((b,i)=>`<div class="result">${coverHTML(b)}
-      <div class="meta"><b>${esc(b.title)}</b><span class="muted">${esc(b.author)}</span></div>
-      ${b.entry_id?`<span class="muted" style="font-size:13px">On shelf</span>`:`<button class="sm" data-sfree="${i}">Read</button>`}</div>`).join("");
-    if(sRes.length)h+=`<div class="sgroup">All books</div>`+sRes.map((b,i)=>`<div class="result">${coverHTML(b)}
-      <div class="meta"><b>${esc(b.title)}</b><span class="muted">${esc(b.author)}${b.pages?` · ${b.pages} pp`:""}</span></div>
-      <select data-i="${i}"><option value="want">Want</option><option value="reading">Reading</option><option value="read">Read</option></select>
-      <button class="sm" data-sadd="${i}">Add</button></div>`).join("");
-    else if(olr&&!olr.online)h+=`<div class="sgroup">Couldn't reach the book catalogue. Use “Add manually” below.</div>`;
-    if(!fr&&!sig.aborted)h+=`<div class="sgroup">Looking for free editions…</div>`;
-    if(!h)h=`<div class="empty">No books found for “${esc(q)}”.</div>`;
-    $("#sres").innerHTML=h;
-  };
-  const olr=await ol;paint(olr,null);paint(olr,await free);
+  const r=await fetch("/api/find?q="+encodeURIComponent(q),{signal:sig}).then(r=>r.ok?r.json():null).catch(()=>null);
+  if(sig.aborted)return;
+  sRes=r?.results||[];sFree=(r?.free||[]).slice(0,5);
+  let h=mineHTML;
+  if(sRes.length)h+=`<div class="sgroup">Books</div>`+sRes.map((b,i)=>`<div class="result wide">${coverHTML(b)}
+    <div class="meta"><b>${esc(b.title)}</b><span class="muted">${esc(b.author)}${b.year?` · ${b.year}`:""}</span></div>
+    ${b.entry_id?`<span class="muted" style="font-size:13px">On shelf</span>`:`<select data-i="${i}"><option value="want">Want</option><option value="reading">Reading</option><option value="read">Read</option></select>
+    <button class="sm" data-sadd="${i}">Add</button>`}${waysHTML(b,i)}</div>`).join("");
+  if(sFree.length)h+=`<div class="sgroup">More free classics</div>`+sFree.map((b,i)=>`<div class="result">${coverHTML(b)}
+    <div class="meta"><b>${esc(b.title)}</b><span class="muted">${esc(b.author)}${b.lang&&b.lang!=="en"?` · ${esc(b.lang.toUpperCase())}`:""}</span></div>
+    ${b.entry_id?`<span class="muted" style="font-size:13px">On shelf</span>`:`<button class="sm" data-sfree="${i}">Read</button>`}</div>`).join("");
+  if(!r||!r.online)h+=`<div class="sgroup">Couldn't reach the book catalogue. Use “Add manually” below.</div>`;
+  else if(!sRes.length&&!sFree.length)h+=`<div class="empty">No books found for “${esc(q)}”. Try fewer words, or add it manually below.</div>`;
+  $("#sres").innerHTML=h;
+}
+async function readNow(b){
+  try{const it=await api("/library",{method:"POST",body:{title:b.title,author:b.author,cover_url:b.cover_url,gutenberg_id:b.gutenberg_id,ol_key:b.ol_key,isbn:b.isbn,status:"reading"}});$("#addDlg").close();openReader(it)}
+  catch(err){toast(errMsg(err))}
 }
 $("#sres").addEventListener("click",async e=>{
   const m=e.target.closest("[data-mine]");if(m){$("#addDlg").close();openBook(+m.dataset.mine);return}
-  const fr=e.target.closest("[data-sfree]");
-  if(fr){const b=sFree[+fr.dataset.sfree];try{const it=await api("/library",{method:"POST",body:{title:b.title,author:b.author,cover_url:b.cover_url,gutenberg_id:b.gutenberg_id,status:"reading"}});$("#addDlg").close();openReader(it)}catch(err){toast(errMsg(err))}return}
+  const fr=e.target.closest("[data-sfree]");if(fr)return readNow(sFree[+fr.dataset.sfree]);
+  const rd=e.target.closest("[data-sread]");if(rd)return readNow(sRes[+rd.dataset.sread]);
+  const ls=e.target.closest("[data-listen]");
+  if(ls){// open the tab now so the browser doesn't block it, then point it at LibriVox
+    const w=CAP?null:window.open("","_blank");
+    try{const {url}=await api("/listen/"+ls.dataset.listen);w?w.location=url:window.open(url,"_blank")}
+    catch(err){w?.close();toast(errMsg(err))}
+    return}
   const b=e.target.closest("[data-sadd]");if(!b)return;const i=+b.dataset.sadd;
   const status=$(`#sres select[data-i="${i}"]`).value;
   b.disabled=true;
-  try{await api("/library",{method:"POST",body:{...sRes[i],status}});b.textContent="Added ✓";load()}catch{b.disabled=false;toast("Couldn't add that")}
+  try{const {ways,year,entry_id,...book}=sRes[i];await api("/library",{method:"POST",body:{...book,status}});b.textContent="Added ✓";load()}catch{b.disabled=false;toast("Couldn't add that")}
 });
 $("#madd").onclick=async()=>{
   const title=$("#mt").value.trim();if(!title)return;
@@ -1164,7 +1184,8 @@ function openBook(id){
 bookDlg.addEventListener("close",()=>{if($("#reader").hidden)load()});
 
 /* ================= discover ================= */
-const D={q:"",topic:"",page:1,items:[],next:false,loaded:false,busy:false,topics:null,gen:0};
+const D={q:"",topic:"",page:1,items:[],next:false,loaded:false,busy:false,topics:null,langs:null,gen:0,lang:"en"};
+try{D.lang=localStorage.getItem("shelfie.lang")||"en"}catch{}
 function dcard(b,i){
   return `<div class="book" data-free="${i}">
     ${coverHTML(b,b.entry_id?`<span class="badge">On shelf</span>`:`<button class="addfab" data-fadd="${i}" aria-label="Save to Want to read">${PLUS}</button>`)}
@@ -1173,12 +1194,15 @@ function dcard(b,i){
 const skeleton=n=>Array.from({length:n},()=>`<div class="book sk"><div class="cover"></div><div class="t"></div><div class="a"></div></div>`).join("");
 async function renderTopics(){
   if(!D.topics){try{D.topics=await api("/free/topics")}catch{D.topics=[{id:"",label:"Popular"}]}}
+  if(!D.langs){try{D.langs=await api("/free/languages")}catch{D.langs=[{id:"en",label:"English"}]}
+    $("#dlang").innerHTML=D.langs.map(l=>`<option value="${esc(l.id)}">${esc(l.label)}</option>`).join("")+`<option value="all">All languages</option>`;
+    $("#dlang").value=D.lang}
   $("#topics").innerHTML=D.topics.map(t=>`<button class="chip ${!D.q&&D.topic===t.id?"on":""}" data-topic="${esc(t.id)}">${esc(t.label)}</button>`).join("");
 }
 async function discover(reset){
   if(reset){D.gen++;D.page=1;D.items=[];D.next=false;D.busy=false;$("#dgrid").innerHTML=skeleton(9);renderTopics()}
   if(D.busy)return;D.busy=true;
-  const gen=D.gen,p=new URLSearchParams({page:D.page});if(D.q)p.set("q",D.q);if(D.topic)p.set("topic",D.topic);
+  const gen=D.gen,p=new URLSearchParams({page:D.page,lang:D.lang});if(D.q)p.set("q",D.q);if(D.topic)p.set("topic",D.topic);
   let r;try{r=await api("/free?"+p)}catch{r={online:false}}
   if(gen!==D.gen)return; // a newer search started meanwhile
   D.busy=false;
@@ -1207,6 +1231,7 @@ async function freeBook(i,read){
 $("#dform").addEventListener("submit",e=>{e.preventDefault();$("#dq").blur();D.q=$("#dq").value.trim();D.topic="";discover(true)});
 $("#topics").addEventListener("click",e=>{const c=e.target.closest("[data-topic]");if(!c)return;D.topic=c.dataset.topic;D.q="";$("#dq").value="";discover(true)});
 $("#dgrid").addEventListener("click",e=>{if(e.target.closest("[data-retry]"))discover(true)});
+$("#dlang").addEventListener("change",e=>{D.lang=e.target.value;try{localStorage.setItem("shelfie.lang",D.lang)}catch{}discover(true)});
 
 /* ================= reader =================
    Only the current chapter and its two neighbours are in the DOM, laid out as CSS

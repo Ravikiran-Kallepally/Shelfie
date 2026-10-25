@@ -2,7 +2,7 @@
    Book text never changes, so it is cache-first. Everything else is network-first with a
    short timeout, so a phone that can't reach the server (away from home) falls back to
    the last copy quickly. Writes are never cached; the page queues them while offline. */
-const V = "shelfie-v4"; // v4: covers come from /api/cover (drops the old cross-site cover cache)
+const V = "shelfie-v5"; // v5: find any book
 const SHELL = ["/app", "/static/manifest.webmanifest", "/static/icon.svg"];
 
 self.addEventListener("install", e => {
@@ -25,7 +25,7 @@ self.addEventListener("fetch", e => {
     if (p.startsWith("/api/text/")) return e.respondWith(cacheFirst(req, V + "-books"));
     if (p.startsWith("/api/cover")) return e.respondWith(cacheFirst(req, V + "-covers", 400));
     // annotations: the page keeps its own offline copy; search/export are only useful live
-    if (p.startsWith("/api/books/") || p.startsWith("/api/search") || p.startsWith("/api/export")) return;
+    if (p.startsWith("/api/books/") || p.startsWith("/api/search") || p.startsWith("/api/find") || p.startsWith("/api/listen") || p.startsWith("/api/export")) return;
     if (p.startsWith("/api/")) return e.respondWith(networkFirst(req, V + "-api"));
     return e.respondWith(networkFirst(req, V + "-shell"));
   }

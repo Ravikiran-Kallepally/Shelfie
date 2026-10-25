@@ -23,6 +23,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 import auth
+import catalog
 import reads
 import social
 from auth import current_user, optional_user
@@ -37,8 +38,10 @@ migrate()
 @asynccontextmanager
 async def lifespan(_app):
     warm = asyncio.create_task(warm_catalog())
+    gutenberg = asyncio.create_task(asyncio.to_thread(catalog.refresh))  # our own full catalogue, weekly
     yield
     warm.cancel()
+    gutenberg.cancel()
 
 
 app = FastAPI(title="Shelfie", lifespan=lifespan)
@@ -319,10 +322,26 @@ def free_topics():
 async def free_books(q: str = "", topic: str = "", page: int = 1, lang: str = "en",
                      me: dict = Depends(current_user)):
     """Browse/search public-domain books. Empty query = most popular."""
-    data = await fetch_catalog(catalog_params(q, topic, page, lang))
+    if q.strip() and catalog.ready():
+        hits = await asyncio.to_thread(catalog.search, q, lang if lang != "all" else "", 32, (page - 1) * 32)
+        out = [{"gutenberg_id": h["gid"], "title": h["title"], "author": h["authors"], "lang": h["lang"],
+                "cover_url": gutenberg_cover(h["gid"])} for h in hits]
+        mark_on_shelf(me, out)
+        return {"results": out, "next": len(hits) == 32, "online": True}
+    data = await fetch_catalog(catalog_params(q, topic, page, lang if lang != "all" else ""))
     if data is None:
         return {"results": [], "next": False, "online": False}
-    out = [dict(b) for b in data["results"]]
+    out = [dict(b, title=catalog.clean_title(b["title"])) for b in data["results"]]
+    mark_on_shelf(me, out)
+    return {"results": out, "next": data["next"], "online": True}
+
+
+def gutenberg_cover(gid: int) -> str:
+    return f"https://www.gutenberg.org/cache/epub/{gid}/pg{gid}.cover.medium.jpg"
+
+
+def mark_on_shelf(me: dict, out: list):
+    """Add entry_id to each free book that's already on this person's shelves."""
     ids = [b["gutenberg_id"] for b in out]
     if ids:
         with closing(db()) as conn:
@@ -336,7 +355,132 @@ async def free_books(q: str = "", topic: str = "", page: int = 1, lang: str = "e
             }
         for b in out:
             b["entry_id"] = have.get(b["gutenberg_id"])
-    return {"results": out, "next": data["next"], "online": True}
+
+
+@app.get("/api/free/languages")
+def free_languages():
+    return [{"id": k, "label": v} for k, v in catalog.LANGUAGES]
+
+
+# ---------- find any book ----------
+# Every search should find the book. Open Library knows millions of books and says, for each,
+# whether a free Gutenberg text, a LibriVox audiobook or a library copy exists; our own
+# catalogue adds free classics in every language. Modern books get honest library/buy links.
+OL_FIELDS = ("key,title,author_name,first_publish_year,cover_i,ebook_access,id_project_gutenberg,"
+             "id_librivox,number_of_pages_median,isbn")
+
+
+def _ways(doc: dict, gid, lvid) -> dict:
+    q = urlencode({"q": f"{doc.get('title', '')} {' '.join(doc.get('author_name', [])[:1])}".strip()})
+    work = f"https://openlibrary.org{doc['key']}" if doc.get("key") else None
+    access = doc.get("ebook_access", "no_ebook")
+    return {
+        "read": bool(gid),                       # opens in Shelfie's own reader
+        "listen": lvid,                          # LibriVox id, resolved to a link on tap
+        "online": work if access == "public" and not gid else None,
+        "borrow": work if access == "borrowable" else None,
+        "library": "https://search.worldcat.org/search?" + q,
+        "buy": "https://bookshop.org/search?" + urlencode({"keywords": doc.get("title", "")}),
+    }
+
+
+@app.get("/api/find")
+async def find(q: str, me: dict = Depends(current_user)):
+    q = q.strip()
+    if len(q) < 2:
+        return {"results": [], "free": [], "online": True}
+
+    async def openlibrary():
+        key = q.lower()
+        if key in _ol_cache:
+            return _ol_cache[key]
+        try:  # Open Library is sometimes slow; past 8s our own catalogue answers alone
+            async with httpx.AsyncClient(timeout=8) as client:
+                r = await client.get("https://openlibrary.org/search.json", params={"q": q, "limit": 20, "fields": OL_FIELDS})
+                r.raise_for_status()
+                docs = r.json().get("docs", [])
+        except Exception:
+            return None
+        if len(_ol_cache) > 2000:
+            _ol_cache.pop(next(iter(_ol_cache)))
+        _ol_cache[key] = docs
+        return docs
+
+    docs, local = await asyncio.gather(openlibrary(), asyncio.to_thread(catalog.search, q, "", 40, 0, True))
+    docs = docs or []
+    # which Gutenberg ids Open Library mentions are real, readable texts (prefer English editions)
+    mentioned = [int(g) for d in docs for g in d.get("id_project_gutenberg", []) if str(g).isdigit()]
+    texts = await asyncio.to_thread(catalog.known, mentioned)
+    results, seen = [], set()
+    for d in docs:
+        gids = [int(g) for g in d.get("id_project_gutenberg", []) if str(g).isdigit() and int(g) in texts]
+        gid = next((g for g in gids if texts[g]["lang"] == "en"), gids[0] if gids else None)
+        if not gid or texts[gid]["lang"] != "en":  # Open Library doesn't always know; match by title and author
+            gid = same_book(d, local, q) or gid
+        lvid = next((str(x) for x in d.get("id_librivox", []) if str(x).isdigit()), None)
+        if gid:
+            seen.add(gid)
+        cover = (f"https://covers.openlibrary.org/b/id/{d['cover_i']}-M.jpg" if d.get("cover_i")
+                 else gutenberg_cover(gid) if gid else None)
+        title = d.get("title", "")
+        if gid and not re.search("[A-Za-z]", title):  # their record is in Cyrillic or Greek; ours reads in English
+            ours = texts.get(gid) or next(h for h in local if h["gid"] == gid)
+            title = ours["title"].split(":")[0].split(";")[0]
+        results.append({
+            "title": title, "author": ", ".join(d.get("author_name", [])[:2]),
+            "year": d.get("first_publish_year"), "cover_url": cover, "ol_key": d.get("key"),
+            "pages": d.get("number_of_pages_median"), "isbn": (d.get("isbn") or [None])[0],
+            "gutenberg_id": gid, "ways": _ways(d, gid, lvid),
+        })
+    free = [{"gutenberg_id": h["gid"], "title": h["title"], "author": h["authors"], "lang": h["lang"],
+             "cover_url": gutenberg_cover(h["gid"])} for h in local[:12] if h["gid"] not in seen]
+    with closing(db()) as conn:
+        gids = [r["gutenberg_id"] for r in results + free if r.get("gutenberg_id")]
+        keys = [r["ol_key"] for r in results if r.get("ol_key")]
+        on_g = {r[0]: r[1] for r in conn.execute(
+            f"SELECT b.gutenberg_id, e.id FROM books b JOIN entries e ON e.book_id=b.id WHERE e.user_id=? AND b.gutenberg_id IN ({','.join('?' * len(gids))})",
+            [me["id"], *gids])} if gids else {}
+        on_k = {r[0]: r[1] for r in conn.execute(
+            f"SELECT b.ol_key, e.id FROM books b JOIN entries e ON e.book_id=b.id WHERE e.user_id=? AND b.ol_key IN ({','.join('?' * len(keys))})",
+            [me["id"], *keys])} if keys else {}
+    for r in results:
+        r["entry_id"] = on_g.get(r["gutenberg_id"]) or on_k.get(r["ol_key"])
+    for r in free:
+        r["entry_id"] = on_g.get(r["gutenberg_id"])
+    return {"results": results, "free": free, "online": docs != [] or bool(local)}
+
+
+def same_book(doc: dict, hits: list[dict], q: str):
+    """Our English Gutenberg text of this Open Library book: same author, and the same title
+    (theirs, or the one searched for, since their record may carry the original "Анна Каренина")."""
+    titles = {catalog._norm(doc.get("title", ""))}
+    if not re.search("[A-Za-z]", doc.get("title", "")):
+        titles.add(catalog._norm(q))
+    names = {w for a in doc.get("author_name", [])[:3] for w in catalog._norm(a).split() if len(w) > 2}
+    for h in hits:
+        if (h["lang"] == "en" and catalog._norm(h["title"].split(":")[0].split(";")[0]) in titles
+                and names & set(catalog._norm(h["authors"]).split())):
+            return h["gid"]
+    return None
+
+
+_listen: dict[str, str] = {}
+_ol_cache: dict[str, list] = {}
+
+
+@app.get("/api/listen/{lvid}")
+async def listen_link(lvid: str, me: dict = Depends(current_user)):
+    """The LibriVox page for an audiobook (looked up only when someone taps Listen)."""
+    if not lvid.isdigit():
+        raise HTTPException(400)
+    if lvid not in _listen:
+        try:
+            async with httpx.AsyncClient(timeout=10, follow_redirects=True) as client:
+                r = await client.get("https://librivox.org/api/feed/audiobooks/", params={"id": lvid, "format": "json"})
+                _listen[lvid] = r.json()["books"][0]["url_librivox"]
+        except Exception:
+            raise HTTPException(502, "LibriVox didn't answer. Try again in a moment.")
+    return {"url": _listen[lvid]}
 
 
 START_RE = re.compile(r"^\*\*\* ?START OF (THE|THIS) PROJECT GUTENBERG.*$", re.M | re.I)

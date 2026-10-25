@@ -2,7 +2,7 @@ FROM python:3.12-slim
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-COPY app.py auth.py reads.py social.py store.py ./
+COPY app.py auth.py catalog.py reads.py social.py store.py ./
 COPY static ./static
 # the database and downloaded books live on a persistent volume mounted here
 ENV SHELFIE_DATA=/data
