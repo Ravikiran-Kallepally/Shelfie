@@ -792,7 +792,6 @@ body.anon{padding-bottom:24px}
   <div class="field" id="sLayoutF"><label>Pages on wide screens</label><div class="opt" id="sLayout"></div></div>
   <div class="field"><label>Theme</label><div class="swatches" id="sTheme"></div></div>
   <div class="field"><label>Page turn</label><div class="opt" id="sTurn"></div></div>
-  <div class="field"><label>Page sound</label><div class="opt" id="sFeel"></div></div>
 </div></dialog>
 
 <div class="toast" id="toast"></div>
@@ -1288,7 +1287,7 @@ const LH={tight:1.45,normal:1.65,loose:1.9};
 const MARGIN={narrow:{side:16,measure:760},normal:{side:26,measure:640},wide:{side:44,measure:540}};
 const THEMES={paper:"Paper",sepia:"Sepia",dusk:"Dusk",night:"Night"};
 const THEME_BG={paper:"#fbf7ee",sepia:"#f3e8cf",dusk:"#2e2f33",night:"#0e0d0b"};
-let P={size:matchMedia("(min-width:700px)").matches?21:19,font:"literata",lh:"normal",margin:"normal",align:matchMedia("(min-width:600px)").matches?"justify":"left",layout:"auto",turn:"curl",feel:"off",theme:"sepia"};
+let P={size:matchMedia("(min-width:700px)").matches?21:19,font:"literata",lh:"normal",margin:"normal",align:matchMedia("(min-width:600px)").matches?"justify":"left",layout:"auto",turn:"curl",theme:"sepia"};
 try{Object.assign(P,JSON.parse(localStorage.getItem("shelfie.reader")||"{}"))}catch{}
 if(!FONTS[P.font])P.font="literata";
 
@@ -1413,47 +1412,12 @@ function trackFlush(){
 }
 function go(p,dur=300){
   p=Math.max(0,Math.min(R.pages-1,p));
-  if(R.ready){T.last=Date.now();if(p===R.page+1)T.pages++;if(dur&&p!==R.page)rustle()}
+  if(R.ready){T.last=Date.now();if(p===R.page+1)T.pages++}
   R.page=p;
   setX(-R.page*R.step,dur);
   info();
   clearTimeout(R.rcT);R.rcT=setTimeout(recenter,dur+40);
   if(R.ready){clearTimeout(R.saveT);R.saveT=setTimeout(savePos,900)}
-}
-// a page turning: the swish of paper through air, the faint crackle of its fibres, and a soft
-// flap as it lands. Made on the fly (no audio files), a little different every time
-let AC;
-function noise(sec,shape){
-  const n=AC.sampleRate*sec|0,buf=AC.createBuffer(1,n,AC.sampleRate),d=buf.getChannelData(0);
-  for(let i=0;i<n;i++)d[i]=shape(i/n,Math.random()*2-1);
-  return buf;
-}
-function rustle(force){
-  if(P.feel!=="soft"&&!force)return;
-  try{navigator.vibrate?.(4)}catch{}
-  try{
-    AC??=new (window.AudioContext||window.webkitAudioContext)();
-    if(AC.state==="suspended")AC.resume();
-    const t=AC.currentTime+.01,j=.9+Math.random()*.2,out=AC.createGain();
-    out.gain.value=.55;out.connect(AC.destination);
-    const play=(buf,at,nodes)=>{const src=AC.createBufferSource();src.buffer=buf;src.playbackRate.value=j;
-      nodes.reduce((a,b)=>a.connect(b),src).connect(out);src.start(at)};
-    // swish: air past a moving page, its pitch rising and settling
-    const sw=AC.createBiquadFilter();sw.type="bandpass";sw.Q.value=.8;
-    sw.frequency.setValueAtTime(700,t);sw.frequency.linearRampToValueAtTime(3000*j,t+.12);sw.frequency.exponentialRampToValueAtTime(1300,t+.32);
-    const sg=AC.createGain();sg.gain.setValueAtTime(.0001,t);sg.gain.exponentialRampToValueAtTime(.5,t+.08);sg.gain.exponentialRampToValueAtTime(.12,t+.22);sg.gain.exponentialRampToValueAtTime(.0001,t+.34);
-    play(noise(.36,(x,r)=>r),t,[sw,sg]);
-    // crackle: sparse ticks of paper fibre bending, densest mid-turn
-    let tick=0;
-    const cr=noise(.3,(x,r)=>{if(Math.random()<.006*Math.sin(Math.PI*x))tick=.5+Math.random()*.5;tick*=.82;return r*tick});
-    const hp=AC.createBiquadFilter();hp.type="highpass";hp.frequency.value=2600;
-    const cg=AC.createGain();cg.gain.value=.35;
-    play(cr,t+.03,[hp,cg]);
-    // flap: the page settling against the others
-    const lp=AC.createBiquadFilter();lp.type="lowpass";lp.frequency.value=380;
-    const fg=AC.createGain();fg.gain.value=.9;
-    play(noise(.07,(x,r)=>r*Math.pow(1-x,3)),t+.27,[lp,fg]);
-  }catch{}
 }
 const CURL={raf:0,done:null,sec:null,geo:0};
 const curlOK=()=>P.turn==="curl"&&!R.spread&&!matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -1734,7 +1698,7 @@ function turn(dir){
   if(target<0||target>R.pages-1){ // nudge at the very start/end of the book
     setX(-R.page*R.step-dir*28,120);setTimeout(()=>setX(-R.page*R.step,220),120);return}
   if(curlOK()){
-    rustle();curlStart(dir);
+    curlStart(dir);
     if(dir>0)curlTo(R.step,0,()=>go(R.page+1,0));else curlTo(0,R.step);
     return}
   go(target);
@@ -1848,7 +1812,7 @@ rView.addEventListener("pointermove",e=>{
   if(g.curl===undefined){ // curl mode: grab the page; at the covers, fall back to a gentle rubber band
     const dir=dx<0?1:-1,t=R.page+dir;
     g.curl=curlOK()&&t>=0&&t<=R.pages-1?dir:0;
-    if(g.curl){ensureRoom(dir);curlStart(dir);rustle()}
+    if(g.curl){ensureRoom(dir);curlStart(dir)}
   }
   if(g.curl){curlAt(g.curl>0?R.step+dx:dx);return}
   const edge=(dx>0&&R.page===0)||(dx<0&&R.page===R.pages-1);
@@ -1937,18 +1901,17 @@ function renderSettings(){
   opts("#sAlign",{justify:"Justified",left:"Ragged"},"align");
   opts("#sLayout",{auto:"Two pages",single:"One page"},"layout");
   opts("#sTurn",{curl:"Curl",slide:"Slide"},"turn");
-  opts("#sFeel",{off:"Silent",soft:"Paper"},"feel");
   $("#sLayoutF").hidden=!(rView.clientWidth>=900&&rView.clientWidth>rView.clientHeight*1.15);
   $("#sTheme").innerHTML=Object.entries(THEMES).map(([k,v])=>`<button data-k="${k}" class="t-${k} ${P.theme===k?"on":""}" style="background:${THEME_BG[k]};color:${k==="paper"||k==="sepia"?"#3a2c1e":"#d8d0c4"};border-color:rgba(128,128,128,.3)">${v}</button>`).join("");
 }
 $("#rSetBtn").onclick=()=>{renderSettings();sheet($("#rSetDlg"))};
 let sizeT;
 $("#sSize").addEventListener("input",e=>{P.size=+e.target.value;applyPrefs();clearTimeout(sizeT);sizeT=setTimeout(relayout,120)});
-[["#sFont","font"],["#sLh","lh"],["#sMargin","margin"],["#sAlign","align"],["#sLayout","layout"],["#sTheme","theme"],["#sTurn","turn"],["#sFeel","feel"]].forEach(([el,key])=>{
+[["#sFont","font"],["#sLh","lh"],["#sMargin","margin"],["#sAlign","align"],["#sLayout","layout"],["#sTheme","theme"],["#sTurn","turn"]].forEach(([el,key])=>{
   $(el).addEventListener("click",e=>{
     const b=e.target.closest("[data-k]");if(!b||P[key]===b.dataset.k)return;
     P[key]=b.dataset.k;applyPrefs();renderSettings();
-    if(key==="feel"||key==="turn"){if(key==="feel"&&P.feel==="soft")rustle(true);return}
+    if(key==="turn")return;
     if(key!=="theme")relayout();
   });
 });
